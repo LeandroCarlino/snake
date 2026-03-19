@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Serpent: Sistema Complejo</title>
+    <title>Serpent: Entorno Operativo</title>
     <style>
         :root {
             --bg-color: #0B0C10;
@@ -72,6 +72,20 @@
             letter-spacing: 4px;
             margin-top: 0;
             text-transform: uppercase;
+        }
+        #end-status {
+            border: 1px solid var(--accent);
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        #end-status h2 {
+            margin: 0 0 10px 0;
+            color: var(--text-highlight);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 18px;
         }
         .menu-section {
             margin: 15px 0;
@@ -156,6 +170,7 @@
             pointer-events: none;
         }
         .hidden { display: none !important; }
+        .disabled { opacity: 0.5; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -170,7 +185,12 @@
     <div id="countdown-layer">3</div>
 
     <div id="ui-layer">
-        <h1>Serpent</h1>
+        <h1 id="main-title">Serpent</h1>
+        
+        <div id="end-status" class="hidden">
+            <h2 id="end-reason">Anomalía Detectada</h2>
+            <div>Rendimiento Final: <span id="final-score-val" style="color: var(--accent); font-weight: bold; font-size: 24px;">0</span></div>
+        </div>
         
         <div class="menu-section">
             <div class="control-group">
@@ -180,6 +200,9 @@
                     <option value="crimson">Vacío Carmesí</option>
                     <option value="toxic">Bosque Radiactivo</option>
                     <option value="monochrome">Terminal Retro</option>
+                    <option value="synthwave">Retrowave 84</option>
+                    <option value="solar">Erupción Solar</option>
+                    <option value="abyss">Fosa Abisal</option>
                 </select>
             </div>
             <div class="control-group">
@@ -188,6 +211,10 @@
                     <option value="infinite">Bucle Infinito</option>
                     <option value="levels">Progresión Táctica</option>
                 </select>
+            </div>
+            <div class="control-group" id="level-select-group">
+                <label for="start-level">Punto de Inserción</label>
+                <select id="start-level"></select>
             </div>
         </div>
 
@@ -218,6 +245,12 @@
         const volumeSlider = document.getElementById("master-volume");
         const bgmToggle = document.getElementById("bgm-toggle");
         const countdownLayer = document.getElementById("countdown-layer");
+        const startLevelSelect = document.getElementById("start-level");
+        const levelSelectGroup = document.getElementById("level-select-group");
+        
+        const endStatus = document.getElementById("end-status");
+        const endReason = document.getElementById("end-reason");
+        const finalScoreVal = document.getElementById("final-score-val");
 
         const hudScore = document.getElementById("hud-score");
         const hudLevel = document.getElementById("hud-level");
@@ -225,28 +258,17 @@
         const hudMode = document.getElementById("hud-mode");
         const hudLevelDisplay = document.getElementById("hud-level-display");
 
-        // Theme Definitions
         const themes = {
-            'cyberpunk': {
-                css: { bg: '#0B0C10', ui: 'rgba(31, 40, 51, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900' },
-                render: { snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' }
-            },
-            'crimson': {
-                css: { bg: '#140000', ui: 'rgba(40, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300' },
-                render: { snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' }
-            },
-            'toxic': {
-                css: { bg: '#051105', ui: 'rgba(15, 30, 15, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3' },
-                render: { snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' }
-            },
-            'monochrome': {
-                css: { bg: '#000000', ui: 'rgba(20, 20, 20, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF' },
-                render: { snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' }
-            }
+            'cyberpunk': { css: { bg: '#0B0C10', ui: 'rgba(31, 40, 51, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900' }, render: { snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' } },
+            'crimson': { css: { bg: '#140000', ui: 'rgba(40, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300' }, render: { snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' } },
+            'toxic': { css: { bg: '#051105', ui: 'rgba(15, 30, 15, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3' }, render: { snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' } },
+            'monochrome': { css: { bg: '#000000', ui: 'rgba(20, 20, 20, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF' }, render: { snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' } },
+            'synthwave': { css: { bg: '#1a0033', ui: 'rgba(30, 0, 50, 0.95)', acc: '#FF00FF', txt: '#00FFFF', hl: '#FFFF00' }, render: { snake: '#CC00CC', snakeCore: '#00FFFF', head: '#FFFFFF', food: '#FFFF00', obs: '#FF4400', obsFill: 'rgba(255, 68, 0, 0.2)' } },
+            'solar': { css: { bg: '#2b1000', ui: 'rgba(50, 20, 0, 0.95)', acc: '#FF8800', txt: '#FFDDDD', hl: '#FFFFFF' }, render: { snake: '#CC5500', snakeCore: '#FFCC00', head: '#FFFFFF', food: '#00FFFF', obs: '#882200', obsFill: 'rgba(136, 34, 0, 0.4)' } },
+            'abyss': { css: { bg: '#000511', ui: 'rgba(0, 10, 30, 0.95)', acc: '#0088FF', txt: '#AABBFF', hl: '#00FFCC' }, render: { snake: '#0044AA', snakeCore: '#88CCFF', head: '#FFFFFF', food: '#00FFCC', obs: '#002255', obsFill: 'rgba(0, 34, 85, 0.4)' } }
         };
 
         let currentTheme = themes['cyberpunk'];
-
         function applyTheme(themeKey) {
             currentTheme = themes[themeKey];
             document.documentElement.style.setProperty('--bg-color', currentTheme.css.bg);
@@ -255,21 +277,34 @@
             document.documentElement.style.setProperty('--text-main', currentTheme.css.txt);
             document.documentElement.style.setProperty('--text-highlight', currentTheme.css.hl);
         }
-
         themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
 
-        // State Machine & Core Vars
+        let maxUnlockedLevel = parseInt(localStorage.getItem('serpentMaxLevel')) || 1;
+        function updateLevelSelect() {
+            startLevelSelect.innerHTML = '';
+            for(let i=1; i<=maxUnlockedLevel; i++) {
+                let opt = document.createElement('option');
+                opt.value = i; opt.innerText = "Nivel " + i;
+                startLevelSelect.appendChild(opt);
+            }
+        }
+        updateLevelSelect();
+
+        modeSelect.addEventListener('change', (e) => {
+            if(e.target.value === 'infinite') levelSelectGroup.classList.add('disabled');
+            else levelSelectGroup.classList.remove('disabled');
+        });
+        levelSelectGroup.classList.add('disabled');
+
         let isPlaying = false;
         let lastTime = 0;
         let reqAnimFrame;
         let masterVol = parseFloat(volumeSlider.value);
-        
         volumeSlider.addEventListener('input', (e) => { masterVol = parseFloat(e.target.value); });
 
-        // Web Audio API
         let audioCtx;
         let musicInterval;
-        const pentaScale = [220, 261.63, 293.66, 329.63, 392.00, 440, 523.25, 587.33]; // A minor pentatonic expanded
+        const pentaScale = [220, 261.63, 293.66, 329.63, 392.00, 440, 523.25, 587.33];
         let currentNoteIndex = 3;
 
         function initAudio() {
@@ -283,23 +318,19 @@
             const gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            
-            let finalVol = baseVol * masterVol;
-            gain.gain.setValueAtTime(finalVol, audioCtx.currentTime);
+            gain.gain.setValueAtTime(baseVol * masterVol, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
         function playEatSound() { playTone(880, 'sine', 0.1, 0.2); playTone(1108, 'sine', 0.15, 0.2); }
-        function playCrashSound() { playTone(150, 'sawtooth', 0.5, 0.4); playTone(100, 'square', 0.6, 0.4); }
+        function playCrashSound() { 
+            playTone(180, 'triangle', 0.4, 0.15); 
+            setTimeout(() => playTone(130, 'sine', 0.5, 0.15), 100); 
+        }
         function playLevelUpSound() { 
-            playTone(440, 'sine', 0.1, 0.3); 
-            setTimeout(() => playTone(554, 'sine', 0.1, 0.3), 100);
-            setTimeout(() => playTone(659, 'sine', 0.3, 0.3), 200);
+            playTone(440, 'sine', 0.1, 0.3); setTimeout(() => playTone(554, 'sine', 0.1, 0.3), 100); setTimeout(() => playTone(659, 'sine', 0.3, 0.3), 200);
         }
         function playTickSound() { playTone(1000, 'sine', 0.05, 0.1); }
 
@@ -308,41 +339,23 @@
             stopMusic();
             musicInterval = setInterval(() => {
                 if(masterVol > 0 && isPlaying && !state.transitioning) {
-                    // Random walk logic for less repetitive music
-                    let step = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
-                    currentNoteIndex += step;
-                    if (currentNoteIndex < 0) currentNoteIndex = 0;
-                    if (currentNoteIndex >= pentaScale.length) currentNoteIndex = pentaScale.length - 1;
+                    let step = Math.floor(Math.random() * 3) - 1;
+                    currentNoteIndex = Math.max(0, Math.min(pentaScale.length - 1, currentNoteIndex + step));
+                    let freq = pentaScale[currentNoteIndex] / 2;
                     
-                    let freq = pentaScale[currentNoteIndex] / 2; // Lower octave
-                    
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
                     gain.gain.setValueAtTime(0.08 * masterVol, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.3);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
                 }
-            }, 300); // Slightly slower rhythm
+            }, 300);
         }
 
-        function stopMusic() {
-            if (musicInterval) {
-                clearInterval(musicInterval);
-                musicInterval = null;
-            }
-        }
+        function stopMusic() { if (musicInterval) { clearInterval(musicInterval); musicInterval = null; } }
+        bgmToggle.addEventListener('change', () => { if (isPlaying) { if (bgmToggle.checked) startMusic(); else stopMusic(); } });
 
-        bgmToggle.addEventListener('change', () => {
-            if (isPlaying) { if (bgmToggle.checked) startMusic(); else stopMusic(); }
-        });
-
-        // Config & State
         const baseConfig = { width: 900, height: 700, speed: 320, baseLength: 120, growthFactor: 50, thickness: 14, foodRadius: 10 };
 
         let state = {
@@ -356,6 +369,10 @@
         document.addEventListener("keydown", handleInput);
 
         function handleInput(e) {
+            if (e.keyCode === 27 && isPlaying) {
+                endGame('abort');
+                return;
+            }
             if (!isPlaying || state.transitioning) return;
             const keys = { 37: {x:-1,y:0}, 38: {x:0,y:-1}, 39: {x:1,y:0}, 40: {x:0,y:1} };
             if (keys[e.keyCode]) {
@@ -371,24 +388,16 @@
         function spawnDynamicObstacle(edge) {
             let obs = { isDynamic: true, w: 20 + Math.random() * 30, h: 20 + Math.random() * 30, x: 0, y: 0, dx: 0, dy: 0 };
             let speed = 100 + Math.random() * 150 + (state.level * 10);
-            
-            if (edge === 0) { // Top
-                obs.x = Math.random() * baseConfig.width; obs.y = -obs.h; obs.dy = speed;
-            } else if (edge === 1) { // Right
-                obs.x = baseConfig.width; obs.y = Math.random() * baseConfig.height; obs.dx = -speed;
-            } else if (edge === 2) { // Bottom
-                obs.x = Math.random() * baseConfig.width; obs.y = baseConfig.height; obs.dy = -speed;
-            } else { // Left
-                obs.x = -obs.w; obs.y = Math.random() * baseConfig.height; obs.dx = speed;
-            }
+            if (edge === 0) { obs.x = Math.random() * baseConfig.width; obs.y = -obs.h; obs.dy = speed; }
+            else if (edge === 1) { obs.x = baseConfig.width; obs.y = Math.random() * baseConfig.height; obs.dx = -speed; }
+            else if (edge === 2) { obs.x = Math.random() * baseConfig.width; obs.y = baseConfig.height; obs.dy = -speed; }
+            else { obs.x = -obs.w; obs.y = Math.random() * baseConfig.height; obs.dx = speed; }
             return obs;
         }
 
         function generateObstacles(level) {
             state.obstacles = [];
             let staticCount = Math.min(level, 8);
-            
-            // Static Obstacles
             for (let i = 0; i < staticCount; i++) {
                 let w = 40 + Math.random() * 60; let h = 40 + Math.random() * 60;
                 let valid = false; let attempts = 0; let obs;
@@ -399,13 +408,9 @@
                 }
                 if (valid) state.obstacles.push(obs);
             }
-
-            // Dynamic Obstacles (Level 4+)
             if (level >= 4) {
                 let dynamicCount = Math.min(level - 3, 5);
-                for (let i = 0; i < dynamicCount; i++) {
-                    state.obstacles.push(spawnDynamicObstacle(i % 4));
-                }
+                for (let i = 0; i < dynamicCount; i++) state.obstacles.push(spawnDynamicObstacle(i % 4));
             }
         }
 
@@ -425,10 +430,13 @@
         function startGame() {
             initAudio();
             state.mode = modeSelect.value;
-            state.level = 1; state.score = 0; state.levelScore = 0;
-            state.speed = baseConfig.speed; state.targetLength = baseConfig.baseLength;
-            state.targetForNextLevel = state.mode === 'levels' ? 5 : Infinity;
+            state.level = state.mode === 'levels' ? parseInt(startLevelSelect.value) : 1;
+            state.score = 0; state.levelScore = 0;
+            state.speed = baseConfig.speed + ((state.level - 1) * 30); 
+            state.targetLength = baseConfig.baseLength;
+            state.targetForNextLevel = state.mode === 'levels' ? 5 + (state.level * 2) : Infinity;
             
+            endStatus.classList.add("hidden");
             resetPositions();
             updateHUD();
             
@@ -444,7 +452,7 @@
             hudMode.innerText = state.mode === 'infinite' ? 'Infinito' : 'Progresión';
 
             isPlaying = true;
-            triggerTransition(true); // Start with countdown
+            triggerTransition(true);
             startMusic();
             
             if (reqAnimFrame) cancelAnimationFrame(reqAnimFrame);
@@ -469,16 +477,32 @@
         function levelUp() {
             state.level++; state.levelScore = 0; state.speed += 30;
             state.targetForNextLevel = 5 + (state.level * 2);
+            
+            if(state.level > maxUnlockedLevel) {
+                maxUnlockedLevel = state.level;
+                localStorage.setItem('serpentMaxLevel', maxUnlockedLevel);
+                updateLevelSelect();
+            }
+
             resetPositions();
             updateHUD();
             triggerTransition(false);
         }
 
-        function gameOver() {
+        function endGame(reason) {
             isPlaying = false;
             stopMusic();
-            playCrashSound();
             cancelAnimationFrame(reqAnimFrame);
+            
+            if (reason === 'crash') {
+                playCrashSound();
+                endReason.innerText = "Anomalía Detectada";
+            } else if (reason === 'abort') {
+                endReason.innerText = "Secuencia Interrumpida";
+            }
+
+            finalScoreVal.innerText = state.score;
+            endStatus.classList.remove("hidden");
             uiLayer.classList.remove("hidden");
             hudContainer.style.display = "none";
             countdownLayer.style.display = "none";
@@ -528,19 +552,11 @@
             if (state.transitioning) {
                 let remaining = Math.ceil((state.transitionEndTime - time) / 1000);
                 if (remaining < state.lastTick && remaining > 0) {
-                    state.lastTick = remaining;
-                    countdownLayer.innerText = remaining;
-                    playTickSound();
+                    state.lastTick = remaining; countdownLayer.innerText = remaining; playTickSound();
                 }
-                
                 if (time >= state.transitionEndTime) {
-                    state.transitioning = false;
-                    countdownLayer.style.display = "none";
-                    playTone(880, 'square', 0.2, 0.3); // "Go" sound
-                } else {
-                    draw(time);
-                    return;
-                }
+                    state.transitioning = false; countdownLayer.style.display = "none"; playTone(880, 'square', 0.2, 0.3);
+                } else { draw(time); return; }
             }
 
             let head = state.points[state.points.length - 1];
@@ -548,57 +564,43 @@
             if (state.turnQueue.length > 0) {
                 let prevVertex = state.points[state.points.length - 2];
                 if (Math.hypot(head.x - prevVertex.x, head.y - prevVertex.y) > baseConfig.thickness + 2) {
-                    let nextDir = state.turnQueue.shift();
-                    state.points.push({x: head.x, y: head.y});
-                    state.vx = nextDir.x; state.vy = nextDir.y;
-                    head = state.points[state.points.length - 1];
+                    let nextDir = state.turnQueue.shift(); state.points.push({x: head.x, y: head.y});
+                    state.vx = nextDir.x; state.vy = nextDir.y; head = state.points[state.points.length - 1];
                 }
             }
 
-            head.x += state.vx * state.speed * dt;
-            head.y += state.vy * state.speed * dt;
+            head.x += state.vx * state.speed * dt; head.y += state.vy * state.speed * dt;
 
-            // Process dynamic obstacles
             for (let obs of state.obstacles) {
                 if (obs.isDynamic) {
-                    obs.x += obs.dx * dt;
-                    obs.y += obs.dy * dt;
-                    
-                    if (obs.x > baseConfig.width + 50 || obs.x < -obs.w - 50 || 
-                        obs.y > baseConfig.height + 50 || obs.y < -obs.h - 50) {
+                    obs.x += obs.dx * dt; obs.y += obs.dy * dt;
+                    if (obs.x > baseConfig.width + 50 || obs.x < -obs.w - 50 || obs.y > baseConfig.height + 50 || obs.y < -obs.h - 50) {
                         Object.assign(obs, spawnDynamicObstacle(Math.floor(Math.random() * 4)));
                     }
                 }
             }
 
             let currentLen = 0;
-            for (let i = 0; i < state.points.length - 1; i++) {
-                currentLen += Math.hypot(state.points[i+1].x - state.points[i].x, state.points[i+1].y - state.points[i].y);
-            }
-
+            for (let i = 0; i < state.points.length - 1; i++) currentLen += Math.hypot(state.points[i+1].x - state.points[i].x, state.points[i+1].y - state.points[i].y);
             if (currentLen > state.targetLength) advanceTail(currentLen - state.targetLength);
 
             let headR = baseConfig.thickness / 2;
-
-            if (head.x < headR || head.x > baseConfig.width - headR || head.y < headR || head.y > baseConfig.height - headR) { gameOver(); return; }
+            if (head.x < headR || head.x > baseConfig.width - headR || head.y < headR || head.y > baseConfig.height - headR) { endGame('crash'); return; }
 
             let hitRadiusSq = (headR - 2) ** 2;
             for (let i = 0; i < state.points.length - 3; i++) {
-                if (distToSegmentSquared(head, state.points[i], state.points[i+1]) < hitRadiusSq) { gameOver(); return; }
+                if (distToSegmentSquared(head, state.points[i], state.points[i+1]) < hitRadiusSq) { endGame('crash'); return; }
             }
 
             for (let obs of state.obstacles) {
-                if (rectIntersect(head.x, head.y, headR, obs.x, obs.y, obs.w, obs.h)) { gameOver(); return; }
+                if (rectIntersect(head.x, head.y, headR, obs.x, obs.y, obs.w, obs.h)) { endGame('crash'); return; }
             }
 
             if (Math.hypot(head.x - state.food.x, head.y - state.food.y) < (headR + baseConfig.foodRadius)) {
-                playEatSound();
-                state.score++; state.levelScore++; state.targetLength += baseConfig.growthFactor;
+                playEatSound(); state.score++; state.levelScore++; state.targetLength += baseConfig.growthFactor;
                 if (state.mode === 'infinite') state.speed += 2;
                 updateHUD();
-                
-                if (state.mode === 'levels' && state.levelScore >= state.targetForNextLevel) levelUp();
-                else spawnFood();
+                if (state.mode === 'levels' && state.levelScore >= state.targetForNextLevel) levelUp(); else spawnFood();
             }
 
             draw(time);
@@ -608,80 +610,38 @@
             ctx.clearRect(0, 0, baseConfig.width, baseConfig.height);
             let rd = currentTheme.render;
 
-            // Obstacles
             for (let obs of state.obstacles) {
-                ctx.fillStyle = rd.obsFill;
-                ctx.strokeStyle = rd.obs;
-                ctx.lineWidth = 2;
-                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-                ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
-                
+                ctx.fillStyle = rd.obsFill; ctx.strokeStyle = rd.obs; ctx.lineWidth = 2;
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h); ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
                 ctx.beginPath();
-                for(let i=0; i<obs.w+obs.h; i+=15) {
-                    ctx.moveTo(obs.x + i, obs.y);
-                    ctx.lineTo(obs.x, obs.y + i);
-                }
-                ctx.strokeStyle = rd.obsFill;
-                ctx.stroke();
+                for(let i=0; i<obs.w+obs.h; i+=15) { ctx.moveTo(obs.x + i, obs.y); ctx.lineTo(obs.x, obs.y + i); }
+                ctx.strokeStyle = rd.obsFill; ctx.stroke();
             }
 
-            // Food
-            ctx.save();
-            ctx.translate(state.food.x, state.food.y);
-            let scale = 1 + Math.sin(time / 150) * 0.2;
-            ctx.scale(scale, scale);
-            ctx.rotate(time / 800);
-            ctx.beginPath();
-            ctx.moveTo(0, -12); ctx.lineTo(12, 0); ctx.lineTo(0, 12); ctx.lineTo(-12, 0);
-            ctx.closePath();
-            ctx.fillStyle = rd.food;
-            ctx.shadowColor = rd.food;
-            ctx.shadowBlur = 15;
-            ctx.fill();
-            ctx.restore();
+            ctx.save(); ctx.translate(state.food.x, state.food.y);
+            let scale = 1 + Math.sin(time / 150) * 0.2; ctx.scale(scale, scale); ctx.rotate(time / 800);
+            ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(12, 0); ctx.lineTo(0, 12); ctx.lineTo(-12, 0); ctx.closePath();
+            ctx.fillStyle = rd.food; ctx.shadowColor = rd.food; ctx.shadowBlur = 15; ctx.fill(); ctx.restore();
 
-            // Snake
             if (state.points.length > 1) {
-                ctx.beginPath();
-                ctx.moveTo(state.points[0].x, state.points[0].y);
+                ctx.beginPath(); ctx.moveTo(state.points[0].x, state.points[0].y);
                 for (let i = 1; i < state.points.length; i++) ctx.lineTo(state.points[i].x, state.points[i].y);
-                ctx.strokeStyle = rd.snake;
-                ctx.lineWidth = baseConfig.thickness;
-                ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-                ctx.shadowColor = rd.snake;
-                ctx.shadowBlur = 10;
-                ctx.stroke();
+                ctx.strokeStyle = rd.snake; ctx.lineWidth = baseConfig.thickness; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.shadowColor = rd.snake; ctx.shadowBlur = 10; ctx.stroke();
 
-                ctx.beginPath();
-                ctx.moveTo(state.points[0].x, state.points[0].y);
+                ctx.beginPath(); ctx.moveTo(state.points[0].x, state.points[0].y);
                 for (let i = 1; i < state.points.length; i++) ctx.lineTo(state.points[i].x, state.points[i].y);
-                ctx.strokeStyle = rd.snakeCore;
-                ctx.lineWidth = 4;
-                ctx.shadowBlur = 0;
-                ctx.stroke();
+                ctx.strokeStyle = rd.snakeCore; ctx.lineWidth = 4; ctx.shadowBlur = 0; ctx.stroke();
             }
 
             let head = state.points[state.points.length - 1];
-            ctx.save();
-            ctx.translate(head.x, head.y);
-            ctx.rotate(Math.atan2(state.vy, state.vx));
-            ctx.beginPath();
-            ctx.moveTo(14, 0); ctx.lineTo(-6, 10); ctx.lineTo(-2, 0); ctx.lineTo(-6, -10);
-            ctx.closePath();
-            ctx.fillStyle = rd.head;
-            ctx.shadowColor = rd.head;
-            ctx.shadowBlur = 15;
-            ctx.fill();
-            ctx.restore();
+            ctx.save(); ctx.translate(head.x, head.y); ctx.rotate(Math.atan2(state.vy, state.vx));
+            ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-6, 10); ctx.lineTo(-2, 0); ctx.lineTo(-6, -10); ctx.closePath();
+            ctx.fillStyle = rd.head; ctx.shadowColor = rd.head; ctx.shadowBlur = 15; ctx.fill(); ctx.restore();
             
-            // Dim if transitioning
-            if(state.transitioning) {
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(0,0, baseConfig.width, baseConfig.height);
-            }
+            if(state.transitioning) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0, baseConfig.width, baseConfig.height); }
         }
         
-        // Initial Theme Apply
         applyTheme('cyberpunk');
     </script>
 </body>
