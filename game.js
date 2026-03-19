@@ -1,0 +1,615 @@
+const dictionary = {
+    es: { mode: "Modo", level: "Nivel", score: "Puntuación", target: "Objetivo", gameOver: "Fin del Juego", paused: "Sistema Pausado", currentScoreLabel: "Puntuación", finalScore: "Puntuación Final", gameSettings: "Ajustes del Juego", language: "Idioma", gameMode: "Modo de Juego", infinite: "Infinito", levels: "Niveles", startLevel: "Comenzar en Nivel", graphicsSettings: "Gráficos", theme: "Tema Visual", particles: "Efectos de Partículas", controlsTitle: "Controles", controlsMove: "Movimiento: Flechas o WASD", controlsPause: "Pausa / Menú: Tecla ESC", audioSettings: "Audio", volume: "Volumen", music: "Música", play: "Jugar", resume: "Reanudar Secuencia", restart: "Reiniciar Secuencia", saveProgress: "Guardar Progreso", saved: "¡Guardado!", mainMenu: "Volver al Menú Principal", infoTitle: "Información", infoDesc: "Un proyecto sencillo para practicar programación, recreando el clásico Snake con la ayuda de Gemini 3.1. Creado por " },
+    en: { mode: "Mode", level: "Level", score: "Score", target: "Target", gameOver: "Game Over", paused: "System Paused", currentScoreLabel: "Score", finalScore: "Final Score", gameSettings: "Game Settings", language: "Language", gameMode: "Game Mode", infinite: "Infinite", levels: "Levels", startLevel: "Start at Level", graphicsSettings: "Graphics", theme: "Visual Theme", particles: "Particle Effects", controlsTitle: "Controls", controlsMove: "Movement: Arrows or WASD", controlsPause: "Pause / Menu: ESC Key", audioSettings: "Audio", volume: "Volume", music: "Music", play: "Play", resume: "Resume Sequence", restart: "Restart Sequence", saveProgress: "Save Progress", saved: "Saved!", mainMenu: "Return to Main Menu", infoTitle: "Information", infoDesc: "A simple practice project recreating the classic Snake with the assistance of Gemini 3.1. Created by " }
+};
+
+let currentLanguage = navigator.language.startsWith('es') ? 'es' : 'en';
+
+function applyLanguage() {
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (dictionary[currentLanguage][key]) {
+            if (element.tagName === 'OPTION') element.innerText = dictionary[currentLanguage][key];
+            else element.innerText = dictionary[currentLanguage][key];
+        }
+    });
+    refreshLevelSelector();
+}
+
+const uiElements = {
+    langSelect: document.getElementById("lang-select"),
+    canvas: document.getElementById("gameCanvas"),
+    ctx: document.getElementById("gameCanvas").getContext("2d"),
+    layer: document.getElementById("ui-layer"),
+    hud: document.getElementById("hud-container"),
+    startBtn: document.getElementById("startBtn"),
+    saveBtn: document.getElementById("saveBtn"),
+    returnMenuBtn: document.getElementById("returnMenuBtn"),
+    menuExclusive: document.getElementById("menu-exclusive-content"),
+    modeSelect: document.getElementById("game-mode"),
+    themeSelect: document.getElementById("theme-select"),
+    particlesToggle: document.getElementById("particles-toggle"),
+    volumeSlider: document.getElementById("master-volume"),
+    bgmToggle: document.getElementById("bgm-toggle"),
+    countdown: document.getElementById("countdown-layer"),
+    startLevelSelect: document.getElementById("start-level"),
+    levelSelectGroup: document.getElementById("level-select-group"),
+    endStatus: document.getElementById("end-status"),
+    endReason: document.getElementById("end-reason"),
+    finalScoreVal: document.getElementById("final-score-val"),
+    hudScore: document.getElementById("hud-score"),
+    hudLevel: document.getElementById("hud-level"),
+    hudTarget: document.getElementById("hud-target"),
+    hudMode: document.getElementById("hud-mode"),
+    hudLevelDisplay: document.getElementById("hud-level-display")
+};
+
+uiElements.langSelect.value = currentLanguage;
+uiElements.langSelect.addEventListener('change', (e) => { currentLanguage = e.target.value; applyLanguage(); });
+
+const themeData = {
+    'cyberpunk': { bg: '#0B0C10', ui: 'rgba(31, 40, 51, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900', snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' },
+    'crimson': { bg: '#140000', ui: 'rgba(40, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300', snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' },
+    'toxic': { bg: '#051105', ui: 'rgba(15, 30, 15, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3', snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' },
+    'monochrome': { bg: '#000000', ui: 'rgba(20, 20, 20, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF', snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' },
+    'synthwave': { bg: '#1a0033', ui: 'rgba(30, 0, 50, 0.95)', acc: '#FF00FF', txt: '#00FFFF', hl: '#FFFF00', snake: '#CC00CC', snakeCore: '#00FFFF', head: '#FFFFFF', food: '#FFFF00', obs: '#FF4400', obsFill: 'rgba(255, 68, 0, 0.2)' },
+    'solar': { bg: '#2b1000', ui: 'rgba(50, 20, 0, 0.95)', acc: '#FF8800', txt: '#FFDDDD', hl: '#FFFFFF', snake: '#CC5500', snakeCore: '#FFCC00', head: '#FFFFFF', food: '#00FFFF', obs: '#882200', obsFill: 'rgba(136, 34, 0, 0.4)' },
+    'abyss': { bg: '#000511', ui: 'rgba(0, 10, 30, 0.95)', acc: '#0088FF', txt: '#AABBFF', hl: '#00FFCC', snake: '#0044AA', snakeCore: '#88CCFF', head: '#FFFFFF', food: '#00FFCC', obs: '#002255', obsFill: 'rgba(0, 34, 85, 0.4)' }
+};
+
+function applyVisualTheme(themeKey) {
+    const params = themeData[themeKey] || themeData['cyberpunk'];
+    currentThemeParams = params;
+    document.documentElement.style.setProperty('--bg-color', params.bg);
+    document.documentElement.style.setProperty('--ui-bg', params.ui);
+    document.documentElement.style.setProperty('--accent', params.acc);
+    document.documentElement.style.setProperty('--text-main', params.txt);
+    document.documentElement.style.setProperty('--text-highlight', params.hl);
+}
+
+const savedTheme = localStorage.getItem('snakeTheme') || uiElements.themeSelect.value || 'cyberpunk';
+uiElements.themeSelect.value = savedTheme;
+applyVisualTheme(savedTheme);
+
+uiElements.themeSelect.addEventListener('change', (e) => { 
+    applyVisualTheme(e.target.value); 
+    localStorage.setItem('snakeTheme', e.target.value);
+});
+
+let maxLevelUnlocked = parseInt(localStorage.getItem('snakeMaxLevelUnlocked')) || 1;
+
+function refreshLevelSelector(targetLevel = null) {
+    const previousSelection = targetLevel || uiElements.startLevelSelect.value || maxLevelUnlocked;
+    uiElements.startLevelSelect.innerHTML = '';
+    for(let i = 1; i <= maxLevelUnlocked; i++) {
+        let option = document.createElement('option');
+        option.value = i; 
+        option.innerText = `${dictionary[currentLanguage].level} ${i}`;
+        uiElements.startLevelSelect.appendChild(option);
+    }
+    uiElements.startLevelSelect.value = Math.min(previousSelection, maxLevelUnlocked);
+}
+
+uiElements.saveBtn.addEventListener('click', () => {
+    localStorage.setItem('snakeMaxLevelUnlocked', maxLevelUnlocked);
+    let originalText = uiElements.saveBtn.innerText;
+    uiElements.saveBtn.innerText = dictionary[currentLanguage].saved;
+    setTimeout(() => uiElements.saveBtn.innerText = originalText, 1500);
+});
+
+function syncModeUI() {
+    if(uiElements.modeSelect.value === 'infinite') uiElements.levelSelectGroup.classList.add('disabled');
+    else uiElements.levelSelectGroup.classList.remove('disabled');
+}
+uiElements.modeSelect.addEventListener('change', syncModeUI);
+
+let systemState = 'menu';
+let previousTime = 0;
+let animationFrameId;
+let audioVolume = parseFloat(uiElements.volumeSlider.value);
+
+uiElements.volumeSlider.addEventListener('input', (e) => { audioVolume = parseFloat(e.target.value); });
+
+let audioContext;
+let musicTimer;
+
+const musicPatterns = [
+    [220, 261.63, 329.63, 440], 
+    [261.63, 329.63, 392.00, 523.25], 
+    [293.66, 349.23, 440, 587.33]
+];
+let currentPatternIndex = 0;
+let notePosition = 0;
+
+function initializeAudio() {
+    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioContext.state === 'suspended') audioContext.resume();
+}
+
+function triggerTone(frequency, waveform, duration, baseVolume) {
+    if (!audioContext || audioVolume === 0) return;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.type = waveform;
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(baseVolume * audioVolume, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+    oscillator.connect(gainNode); 
+    gainNode.connect(audioContext.destination);
+    oscillator.start(); 
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playEventSound(type) {
+    if(type === 'eat') { triggerTone(880, 'sine', 0.1, 0.2); triggerTone(1108, 'sine', 0.15, 0.2); }
+    if(type === 'crash') triggerTone(150, 'square', 0.3, 0.2);
+    if(type === 'level') { triggerTone(440, 'sine', 0.1, 0.3); setTimeout(() => triggerTone(554, 'sine', 0.1, 0.3), 100); setTimeout(() => triggerTone(659, 'sine', 0.3, 0.3), 200); }
+    if(type === 'tick') triggerTone(1000, 'sine', 0.05, 0.1);
+}
+
+function toggleMusicSequence() {
+    if (!uiElements.bgmToggle.checked || !audioContext) return;
+    haltMusicSequence();
+    musicTimer = setInterval(() => {
+        if(audioVolume > 0 && systemState === 'playing' && !gameStateData.isTransitioning) {
+            let freq = musicPatterns[currentPatternIndex][notePosition] / 2;
+            notePosition++;
+            if(notePosition >= 4) {
+                notePosition = 0;
+                currentPatternIndex = (currentPatternIndex + 1) % musicPatterns.length;
+            }
+            const osc = audioContext.createOscillator(); 
+            const gain = audioContext.createGain();
+            osc.type = 'triangle'; 
+            osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+            gain.gain.setValueAtTime(0.08 * audioVolume, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+            osc.connect(gain); 
+            gain.connect(audioContext.destination);
+            osc.start(); 
+            osc.stop(audioContext.currentTime + 0.2);
+        }
+    }, 250);
+}
+
+function haltMusicSequence() { 
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } 
+}
+
+uiElements.bgmToggle.addEventListener('change', () => { 
+    if (systemState === 'playing') { if (uiElements.bgmToggle.checked) toggleMusicSequence(); else haltMusicSequence(); } 
+});
+
+const gameMetrics = { width: 900, height: 700, baseSpeed: 320, startLength: 120, growthFactor: 50, snakeWidth: 14, foodSize: 10 };
+
+let gameStateData = {
+    mode: 'infinite', level: 1, bodySegments: [], velX: 1, velY: 0, inputQueue: [],
+    targetLength: gameMetrics.startLength, currentScore: 0, levelScore: 0,
+    foodPos: {x: 0, y: 0}, speed: gameMetrics.baseSpeed, obstacleData: [], particleData: [],
+    nextLevelRequirement: 0, isTransitioning: false, transitionEndLimit: 0, tickCounter: 0
+};
+
+uiElements.startBtn.addEventListener("click", () => {
+    if (systemState === 'paused') executeResume();
+    else executeStart();
+});
+
+uiElements.returnMenuBtn.addEventListener("click", () => {
+    executeReturnToMenu();
+});
+
+document.addEventListener("keydown", (e) => {
+    if (e.keyCode === 27) {
+        if (systemState === 'playing') executePause();
+        else if (systemState === 'paused') executeResume();
+        return;
+    }
+    if (systemState !== 'playing' || gameStateData.isTransitioning) return;
+    
+    const directionMap = { 
+        37: {x:-1,y:0}, 38: {x:0,y:-1}, 39: {x:1,y:0}, 40: {x:0,y:1},
+        65: {x:-1,y:0}, 87: {x:0,y:-1}, 68: {x:1,y:0}, 83: {x:0,y:1}  
+    };
+    
+    if (directionMap[e.keyCode]) {
+        e.preventDefault();
+        registerInput(directionMap[e.keyCode]);
+    }
+});
+
+let swipeStartX = 0; let swipeStartY = 0;
+
+document.addEventListener('touchstart', e => {
+    swipeStartX = e.changedTouches[0].screenX; swipeStartY = e.changedTouches[0].screenY;
+}, {passive: false});
+
+document.addEventListener('touchmove', e => {
+    if (systemState === 'playing') e.preventDefault();
+}, {passive: false});
+
+document.addEventListener('touchend', e => {
+    if (systemState !== 'playing' || gameStateData.isTransitioning) return;
+    let swipeEndX = e.changedTouches[0].screenX; let swipeEndY = e.changedTouches[0].screenY;
+    let deltaX = swipeEndX - swipeStartX; let deltaY = swipeEndY - swipeStartY;
+    
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (Math.abs(deltaX) > 30) registerInput({x: Math.sign(deltaX), y: 0});
+    } else {
+        if (Math.abs(deltaY) > 30) registerInput({x: 0, y: Math.sign(deltaY)});
+    }
+});
+
+function scanGamepadInput() {
+    if (systemState !== 'playing' || gameStateData.isTransitioning) return;
+    const activePads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const controller = activePads[0];
+    if (!controller) return;
+
+    let commandDirection = null;
+    if (controller.buttons[12]?.pressed) commandDirection = {x:0, y:-1}; 
+    else if (controller.buttons[13]?.pressed) commandDirection = {x:0, y:1}; 
+    else if (controller.buttons[14]?.pressed) commandDirection = {x:-1, y:0}; 
+    else if (controller.buttons[15]?.pressed) commandDirection = {x:1, y:0}; 
+    else if (controller.axes[0] < -0.5) commandDirection = {x:-1, y:0}; 
+    else if (controller.axes[0] > 0.5) commandDirection = {x:1, y:0}; 
+    else if (controller.axes[1] < -0.5) commandDirection = {x:0, y:-1}; 
+    else if (controller.axes[1] > 0.5) commandDirection = {x:0, y:1}; 
+
+    if (commandDirection) registerInput(commandDirection);
+}
+
+function registerInput(newVector) {
+    if (gameStateData.inputQueue.length < 2) {
+        let lastVector = gameStateData.inputQueue.length > 0 ? gameStateData.inputQueue[gameStateData.inputQueue.length - 1] : {x: gameStateData.velX, y: gameStateData.velY};
+        if ((newVector.x * lastVector.x + newVector.y * lastVector.y) === 0) {
+            if (gameStateData.inputQueue.length === 0 || gameStateData.inputQueue[gameStateData.inputQueue.length - 1].x !== newVector.x || gameStateData.inputQueue[gameStateData.inputQueue.length - 1].y !== newVector.y) {
+                gameStateData.inputQueue.push(newVector);
+            }
+        }
+    }
+}
+
+function emitParticles(x, y, hexColor) {
+    if (!uiElements.particlesToggle.checked) return;
+    for(let i=0; i<15; i++) {
+        gameStateData.particleData.push({ x: x, y: y, vx: (Math.random()-0.5)*300, vy: (Math.random()-0.5)*300, life: 1, color: hexColor });
+    }
+}
+
+function populateObstacles(targetLevel) {
+    gameStateData.obstacleData = [];
+    let staticAmount = Math.min(targetLevel, 8);
+    for (let i = 0; i < staticAmount; i++) {
+        let w = 40 + Math.random() * 60; let h = 40 + Math.random() * 60;
+        let isValid = false; let attempts = 0; let obsNode;
+        while (!isValid && attempts < 100) {
+            obsNode = { x: 50 + Math.random() * (gameMetrics.width - 100 - w), y: 50 + Math.random() * (gameMetrics.height - 100 - h), w: w, h: h, dynamic: false };
+            if (Math.hypot(obsNode.x - 200, obsNode.y - 350) > 150) isValid = true;
+            attempts++;
+        }
+        if (isValid) gameStateData.obstacleData.push(obsNode);
+    }
+    if (targetLevel >= 4) {
+        let dynamicAmount = Math.min(targetLevel - 3, 5);
+        for (let i = 0; i < dynamicAmount; i++) {
+            let obsNode = { dynamic: true, w: 20 + Math.random() * 30, h: 20 + Math.random() * 30, x: 0, y: 0, dx: 0, dy: 0 };
+            let speed = 100 + Math.random() * 150 + (targetLevel * 10);
+            let edge = i % 4;
+            if (edge === 0) { obsNode.x = Math.random() * gameMetrics.width; obsNode.y = -obsNode.h; obsNode.dy = speed; }
+            else if (edge === 1) { obsNode.x = gameMetrics.width; obsNode.y = Math.random() * gameMetrics.height; obsNode.dx = -speed; }
+            else if (edge === 2) { obsNode.x = Math.random() * gameMetrics.width; obsNode.y = gameMetrics.height; obsNode.dy = -speed; }
+            else { obsNode.x = -obsNode.w; obsNode.y = Math.random() * gameMetrics.height; obsNode.dx = speed; }
+            gameStateData.obstacleData.push(obsNode);
+        }
+    }
+}
+
+function relocateFood() {
+    let limitMargin = 40; let positionFound = false;
+    while (!positionFound) {
+        gameStateData.foodPos = { x: limitMargin + Math.random() * (gameMetrics.width - limitMargin * 2), y: limitMargin + Math.random() * (gameMetrics.height - limitMargin * 2) };
+        positionFound = true;
+        for (let obs of gameStateData.obstacleData) {
+            if (!obs.dynamic && gameStateData.foodPos.x > obs.x - 20 && gameStateData.foodPos.x < obs.x + obs.w + 20 && gameStateData.foodPos.y > obs.y - 20 && gameStateData.foodPos.y < obs.y + obs.h + 20) {
+                positionFound = false; break;
+            }
+        }
+    }
+}
+
+function renderMenuInterface() {
+    uiElements.menuExclusive.classList.remove("hidden");
+    uiElements.saveBtn.classList.remove("hidden");
+    uiElements.returnMenuBtn.classList.add("hidden");
+    uiElements.startBtn.innerText = dictionary[currentLanguage].play;
+}
+
+function executeStart() {
+    initializeAudio();
+    gameStateData.mode = uiElements.modeSelect.value;
+    gameStateData.level = gameStateData.mode === 'levels' ? parseInt(uiElements.startLevelSelect.value) : 1;
+    gameStateData.currentScore = 0; 
+    gameStateData.levelScore = 0;
+    gameStateData.speed = gameMetrics.baseSpeed + ((gameStateData.level - 1) * 30); 
+    gameStateData.targetLength = gameMetrics.startLength;
+    gameStateData.nextLevelRequirement = gameStateData.mode === 'levels' ? 5 + (gameStateData.level * 2) : Infinity;
+    gameStateData.particleData = [];
+    
+    uiElements.endStatus.classList.add("hidden");
+    initializePositions();
+    syncHUD();
+    
+    uiElements.layer.classList.add("hidden");
+    uiElements.hud.style.display = "flex";
+    if (gameStateData.mode === 'infinite') {
+        uiElements.hudLevelDisplay.style.display = 'none';
+        uiElements.hudTarget.parentElement.style.display = 'none';
+    } else {
+        uiElements.hudLevelDisplay.style.display = 'block';
+        uiElements.hudTarget.parentElement.style.display = 'block';
+    }
+    uiElements.hudMode.innerText = gameStateData.mode === 'infinite' ? dictionary[currentLanguage].infinite : dictionary[currentLanguage].levels;
+
+    systemState = 'playing';
+    initiatePhaseTransition(true);
+    toggleMusicSequence();
+    
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    previousTime = performance.now();
+    animationFrameId = requestAnimationFrame(coreLoop);
+}
+
+function executePause() {
+    systemState = 'paused';
+    haltMusicSequence();
+    
+    uiElements.endStatus.classList.remove("hidden");
+    uiElements.endReason.innerText = dictionary[currentLanguage].paused;
+    uiElements.finalScoreVal.innerText = gameStateData.currentScore;
+    
+    uiElements.menuExclusive.classList.add("hidden");
+    uiElements.saveBtn.classList.add("hidden");
+    uiElements.returnMenuBtn.classList.remove("hidden");
+    
+    uiElements.layer.classList.remove("hidden");
+    uiElements.startBtn.innerText = dictionary[currentLanguage].resume;
+}
+
+function executeResume() {
+    systemState = 'playing';
+    uiElements.endStatus.classList.add("hidden");
+    uiElements.layer.classList.add("hidden");
+    toggleMusicSequence();
+    previousTime = performance.now();
+}
+
+function executeReturnToMenu() {
+    systemState = 'menu';
+    renderMenuInterface();
+    uiElements.endStatus.classList.add("hidden");
+    uiElements.hud.style.display = "none";
+    uiElements.countdown.style.display = "none";
+    refreshLevelSelector();
+    
+    uiElements.ctx.clearRect(0, 0, gameMetrics.width, gameMetrics.height);
+    gameStateData.bodySegments = [];
+    gameStateData.obstacleData = [];
+    gameStateData.particleData = [];
+}
+
+function initiatePhaseTransition(initial) {
+    gameStateData.isTransitioning = true;
+    gameStateData.transitionEndLimit = performance.now() + 3000;
+    gameStateData.tickCounter = 4;
+    uiElements.countdown.style.display = "block";
+    if(!initial) playEventSound('level');
+}
+
+function initializePositions() {
+    gameStateData.bodySegments = [ {x: 200 - gameMetrics.startLength, y: gameMetrics.height / 2}, {x: 200, y: gameMetrics.height / 2} ];
+    gameStateData.velX = 1; gameStateData.velY = 0; gameStateData.inputQueue = [];
+    if (gameStateData.mode === 'levels') populateObstacles(gameStateData.level); else gameStateData.obstacleData = [];
+    relocateFood();
+}
+
+function processLevelAdvance() {
+    gameStateData.level++; 
+    gameStateData.levelScore = 0; 
+    gameStateData.speed += 30;
+    gameStateData.nextLevelRequirement = 5 + (gameStateData.level * 2);
+    gameStateData.targetLength = gameMetrics.startLength;
+    
+    if(gameStateData.level > maxLevelUnlocked) {
+        maxLevelUnlocked = gameStateData.level;
+        localStorage.setItem('snakeMaxLevelUnlocked', maxLevelUnlocked);
+    }
+
+    initializePositions();
+    syncHUD();
+    refreshLevelSelector(gameStateData.level);
+    initiatePhaseTransition(false);
+}
+
+function terminateGame() {
+    systemState = 'menu';
+    haltMusicSequence();
+    playEventSound('crash');
+    
+    uiElements.endReason.innerText = dictionary[currentLanguage].gameOver;
+    uiElements.finalScoreVal.innerText = gameStateData.currentScore;
+    
+    renderMenuInterface();
+    
+    uiElements.endStatus.classList.remove("hidden");
+    uiElements.layer.classList.remove("hidden");
+    uiElements.hud.style.display = "none";
+    uiElements.countdown.style.display = "none";
+    uiElements.startBtn.innerText = dictionary[currentLanguage].restart;
+    refreshLevelSelector();
+}
+
+function syncHUD() {
+    uiElements.hudScore.innerText = gameStateData.currentScore; 
+    uiElements.hudLevel.innerText = gameStateData.level;
+    uiElements.hudTarget.innerText = gameStateData.mode === 'levels' ? `${gameStateData.levelScore} / ${gameStateData.nextLevelRequirement}` : '∞';
+}
+
+function contractTail(distanceRemaining) {
+    while (distanceRemaining > 0 && gameStateData.bodySegments.length > 1) {
+        let tailNode = gameStateData.bodySegments[0]; let nextNode = gameStateData.bodySegments[1];
+        let distX = nextNode.x - tailNode.x; let distY = nextNode.y - tailNode.y;
+        let segmentLength = Math.hypot(distX, distY);
+
+        if (distanceRemaining >= segmentLength) { distanceRemaining -= segmentLength; gameStateData.bodySegments.shift(); } 
+        else { let ratio = distanceRemaining / segmentLength; tailNode.x += distX * ratio; tailNode.y += distY * ratio; distanceRemaining = 0; }
+    }
+}
+
+function getSquaredDistance(v, w) { return (v.x - w.x)*(v.x - w.x) + (v.y - w.y)*(v.y - w.y); }
+function checkSegmentCollisionSq(p, v, w) {
+    let l2 = getSquaredDistance(v, w);
+    if (l2 == 0) return getSquaredDistance(p, v);
+    let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return getSquaredDistance(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+}
+function evaluateRectIntersection(cx, cy, r, rx, ry, rw, rh) {
+    let testX = cx; let testY = cy;
+    if (cx < rx) testX = rx; else if (cx > rx + rw) testX = rx + rw;
+    if (cy < ry) testY = ry; else if (cy > ry + rh) testY = ry + rh;
+    let dX = cx - testX; let dY = cy - testY;
+    return (dX*dX + dY*dY) <= (r*r);
+}
+
+function coreLoop(timestamp) {
+    animationFrameId = requestAnimationFrame(coreLoop);
+    if (systemState !== 'playing') return;
+
+    let deltaTime = (timestamp - previousTime) / 1000;
+    if (deltaTime > 0.1) deltaTime = 0.1;
+    previousTime = timestamp;
+
+    scanGamepadInput();
+
+    if (gameStateData.isTransitioning) {
+        let secondsRemaining = Math.ceil((gameStateData.transitionEndLimit - timestamp) / 1000);
+        if (secondsRemaining < gameStateData.tickCounter && secondsRemaining > 0) {
+            gameStateData.tickCounter = secondsRemaining; uiElements.countdown.innerText = secondsRemaining; playEventSound('tick');
+        }
+        if (timestamp >= gameStateData.transitionEndLimit) {
+            gameStateData.isTransitioning = false; uiElements.countdown.style.display = "none"; triggerTone(880, 'square', 0.2, 0.3);
+        } else { renderFrame(timestamp, deltaTime); return; }
+    }
+
+    let headPointer = gameStateData.bodySegments[gameStateData.bodySegments.length - 1];
+
+    if (gameStateData.inputQueue.length > 0) {
+        let prevNode = gameStateData.bodySegments[gameStateData.bodySegments.length - 2];
+        if (Math.hypot(headPointer.x - prevNode.x, headPointer.y - prevNode.y) > gameMetrics.snakeWidth + 2) {
+            let execDir = gameStateData.inputQueue.shift(); gameStateData.bodySegments.push({x: headPointer.x, y: headPointer.y});
+            gameStateData.velX = execDir.x; gameStateData.velY = execDir.y; headPointer = gameStateData.bodySegments[gameStateData.bodySegments.length - 1];
+        }
+    }
+
+    headPointer.x += gameStateData.velX * gameStateData.speed * deltaTime; headPointer.y += gameStateData.velY * gameStateData.speed * deltaTime;
+
+    for (let obs of gameStateData.obstacleData) {
+        if (obs.dynamic) {
+            obs.x += obs.dx * deltaTime; obs.y += obs.dy * deltaTime;
+            if (obs.x > gameMetrics.width + 50 || obs.x < -obs.w - 50 || obs.y > gameMetrics.height + 50 || obs.y < -obs.h - 50) {
+                let speed = 100 + Math.random() * 150 + (gameStateData.level * 10);
+                let edgeType = Math.floor(Math.random() * 4);
+                if (edgeType === 0) { obs.x = Math.random() * gameMetrics.width; obs.y = -obs.h; obs.dx = 0; obs.dy = speed; }
+                else if (edgeType === 1) { obs.x = gameMetrics.width; obs.y = Math.random() * gameMetrics.height; obs.dx = -speed; obs.dy = 0; }
+                else if (edgeType === 2) { obs.x = Math.random() * gameMetrics.width; obs.y = gameMetrics.height; obs.dx = 0; obs.dy = -speed; }
+                else { obs.x = -obs.w; obs.y = Math.random() * gameMetrics.height; obs.dx = speed; obs.dy = 0; }
+            }
+        }
+    }
+
+    let computedLength = 0;
+    for (let i = 0; i < gameStateData.bodySegments.length - 1; i++) computedLength += Math.hypot(gameStateData.bodySegments[i+1].x - gameStateData.bodySegments[i].x, gameStateData.bodySegments[i+1].y - gameStateData.bodySegments[i].y);
+    if (computedLength > gameStateData.targetLength) contractTail(computedLength - gameStateData.targetLength);
+
+    let headRadius = gameMetrics.snakeWidth / 2;
+    
+    if (headPointer.x < headRadius || headPointer.x > gameMetrics.width - headRadius || headPointer.y < headRadius || headPointer.y > gameMetrics.height - headRadius) { 
+        emitParticles(headPointer.x, headPointer.y, currentThemeParams.head);
+        terminateGame(); return; 
+    }
+
+    let hitThresholdSq = (headRadius - 2) ** 2;
+    for (let i = 0; i < gameStateData.bodySegments.length - 3; i++) {
+        if (checkSegmentCollisionSq(headPointer, gameStateData.bodySegments[i], gameStateData.bodySegments[i+1]) < hitThresholdSq) { 
+            emitParticles(headPointer.x, headPointer.y, currentThemeParams.snake);
+            terminateGame(); return; 
+        }
+    }
+
+    for (let obs of gameStateData.obstacleData) {
+        if (evaluateRectIntersection(headPointer.x, headPointer.y, headRadius, obs.x, obs.y, obs.w, obs.h)) { 
+            emitParticles(headPointer.x, headPointer.y, currentThemeParams.obs);
+            terminateGame(); return; 
+        }
+    }
+
+    if (Math.hypot(headPointer.x - gameStateData.foodPos.x, headPointer.y - gameStateData.foodPos.y) < (headRadius + gameMetrics.foodSize)) {
+        playEventSound('eat'); 
+        emitParticles(gameStateData.foodPos.x, gameStateData.foodPos.y, currentThemeParams.food);
+        gameStateData.currentScore++; gameStateData.levelScore++; gameStateData.targetLength += gameMetrics.growthFactor;
+        if (gameStateData.mode === 'infinite') gameStateData.speed += 2;
+        syncHUD();
+        if (gameStateData.mode === 'levels' && gameStateData.levelScore >= gameStateData.nextLevelRequirement) processLevelAdvance(); else relocateFood();
+    }
+
+    renderFrame(timestamp, deltaTime);
+}
+
+function renderFrame(timeRef, dt) {
+    uiElements.ctx.clearRect(0, 0, gameMetrics.width, gameMetrics.height);
+
+    for (let obs of gameStateData.obstacleData) {
+        uiElements.ctx.fillStyle = currentThemeParams.obsFill; uiElements.ctx.strokeStyle = currentThemeParams.obs; uiElements.ctx.lineWidth = 2;
+        uiElements.ctx.fillRect(obs.x, obs.y, obs.w, obs.h); uiElements.ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        uiElements.ctx.beginPath();
+        for(let i=0; i<obs.w+obs.h; i+=15) { uiElements.ctx.moveTo(obs.x + i, obs.y); uiElements.ctx.lineTo(obs.x, obs.y + i); }
+        uiElements.ctx.strokeStyle = currentThemeParams.obsFill; uiElements.ctx.stroke();
+    }
+
+    uiElements.ctx.save(); uiElements.ctx.translate(gameStateData.foodPos.x, gameStateData.foodPos.y);
+    let foodScale = 1 + Math.sin(timeRef / 150) * 0.2; uiElements.ctx.scale(foodScale, foodScale); uiElements.ctx.rotate(timeRef / 800);
+    uiElements.ctx.beginPath(); uiElements.ctx.moveTo(0, -12); uiElements.ctx.lineTo(12, 0); uiElements.ctx.lineTo(0, 12); uiElements.ctx.lineTo(-12, 0); uiElements.ctx.closePath();
+    uiElements.ctx.fillStyle = currentThemeParams.food; uiElements.ctx.shadowColor = currentThemeParams.food; uiElements.ctx.shadowBlur = 15; uiElements.ctx.fill(); uiElements.ctx.restore();
+
+    if (gameStateData.bodySegments.length > 1) {
+        uiElements.ctx.beginPath(); uiElements.ctx.moveTo(gameStateData.bodySegments[0].x, gameStateData.bodySegments[0].y);
+        for (let i = 1; i < gameStateData.bodySegments.length; i++) uiElements.ctx.lineTo(gameStateData.bodySegments[i].x, gameStateData.bodySegments[i].y);
+        uiElements.ctx.strokeStyle = currentThemeParams.snake; uiElements.ctx.lineWidth = gameMetrics.snakeWidth; uiElements.ctx.lineCap = 'round'; uiElements.ctx.lineJoin = 'round';
+        uiElements.ctx.shadowColor = currentThemeParams.snake; uiElements.ctx.shadowBlur = 10; uiElements.ctx.stroke();
+
+        uiElements.ctx.beginPath(); uiElements.ctx.moveTo(gameStateData.bodySegments[0].x, gameStateData.bodySegments[0].y);
+        for (let i = 1; i < gameStateData.bodySegments.length; i++) uiElements.ctx.lineTo(gameStateData.bodySegments[i].x, gameStateData.bodySegments[i].y);
+        uiElements.ctx.strokeStyle = currentThemeParams.snakeCore; uiElements.ctx.lineWidth = 4; uiElements.ctx.shadowBlur = 0; uiElements.ctx.stroke();
+    }
+
+    let activeHead = gameStateData.bodySegments[gameStateData.bodySegments.length - 1];
+    uiElements.ctx.save(); uiElements.ctx.translate(activeHead.x, activeHead.y); uiElements.ctx.rotate(Math.atan2(gameStateData.velY, gameStateData.velX));
+    uiElements.ctx.beginPath(); uiElements.ctx.moveTo(14, 0); uiElements.ctx.lineTo(-6, 10); uiElements.ctx.lineTo(-2, 0); uiElements.ctx.lineTo(-6, -10); uiElements.ctx.closePath();
+    uiElements.ctx.fillStyle = currentThemeParams.head; uiElements.ctx.shadowColor = currentThemeParams.head; uiElements.ctx.shadowBlur = 15; uiElements.ctx.fill(); uiElements.ctx.restore();
+
+    for (let i = gameStateData.particleData.length - 1; i >= 0; i--) {
+        let p = gameStateData.particleData[i];
+        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 1.5;
+        if (p.life <= 0) { gameStateData.particleData.splice(i, 1); continue; }
+        uiElements.ctx.globalAlpha = p.life; uiElements.ctx.fillStyle = p.color;
+        uiElements.ctx.fillRect(p.x, p.y, 4, 4);
+    }
+    uiElements.ctx.globalAlpha = 1;
+    
+    if(gameStateData.isTransitioning) { uiElements.ctx.fillStyle = 'rgba(0,0,0,0.5)'; uiElements.ctx.fillRect(0,0, gameMetrics.width, gameMetrics.height); }
+}
+
+refreshLevelSelector(maxLevelUnlocked);
+applyLanguage();
+syncModeUI();
+renderMenuInterface();
