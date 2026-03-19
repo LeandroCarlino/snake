@@ -26,6 +26,7 @@ const uiElements = {
     saveBtn: document.getElementById("saveBtn"),
     returnMenuBtn: document.getElementById("returnMenuBtn"),
     menuExclusives: document.querySelectorAll(".menu-exclusive"),
+    menuLayout: document.getElementById("menu-layout"),
     modeSelect: document.getElementById("game-mode"),
     themeSelect: document.getElementById("theme-select"),
     particlesToggle: document.getElementById("particles-toggle"),
@@ -48,13 +49,13 @@ uiElements.langSelect.value = currentLanguage;
 uiElements.langSelect.addEventListener('change', (e) => { currentLanguage = e.target.value; applyLanguage(); });
 
 const themeData = {
-    'cyberpunk': { bg: '#0B0C10', ui: 'rgba(31, 40, 51, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900', snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' },
-    'crimson': { bg: '#140000', ui: 'rgba(40, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300', snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' },
-    'toxic': { bg: '#051105', ui: 'rgba(15, 30, 15, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3', snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' },
-    'monochrome': { bg: '#000000', ui: 'rgba(20, 20, 20, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF', snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' },
-    'synthwave': { bg: '#1a0033', ui: 'rgba(30, 0, 50, 0.95)', acc: '#FF00FF', txt: '#00FFFF', hl: '#FFFF00', snake: '#CC00CC', snakeCore: '#00FFFF', head: '#FFFFFF', food: '#FFFF00', obs: '#FF4400', obsFill: 'rgba(255, 68, 0, 0.2)' },
-    'solar': { bg: '#2b1000', ui: 'rgba(50, 20, 0, 0.95)', acc: '#FF8800', txt: '#FFDDDD', hl: '#FFFFFF', snake: '#CC5500', snakeCore: '#FFCC00', head: '#FFFFFF', food: '#00FFFF', obs: '#882200', obsFill: 'rgba(136, 34, 0, 0.4)' },
-    'abyss': { bg: '#000511', ui: 'rgba(0, 10, 30, 0.95)', acc: '#0088FF', txt: '#AABBFF', hl: '#00FFCC', snake: '#0044AA', snakeCore: '#88CCFF', head: '#FFFFFF', food: '#00FFCC', obs: '#002255', obsFill: 'rgba(0, 34, 85, 0.4)' }
+    'cyberpunk': { bg: '#0B0C10', ui: 'rgba(15, 20, 25, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900', snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' },
+    'crimson': { bg: '#140000', ui: 'rgba(25, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300', snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' },
+    'toxic': { bg: '#051105', ui: 'rgba(10, 20, 10, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3', snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' },
+    'monochrome': { bg: '#000000', ui: 'rgba(15, 15, 15, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF', snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' },
+    'synthwave': { bg: '#1a0033', ui: 'rgba(20, 0, 35, 0.95)', acc: '#FF00FF', txt: '#00FFFF', hl: '#FFFF00', snake: '#CC00CC', snakeCore: '#00FFFF', head: '#FFFFFF', food: '#FFFF00', obs: '#FF4400', obsFill: 'rgba(255, 68, 0, 0.2)' },
+    'solar': { bg: '#2b1000', ui: 'rgba(35, 15, 0, 0.95)', acc: '#FF8800', txt: '#FFDDDD', hl: '#FFFFFF', snake: '#CC5500', snakeCore: '#FFCC00', head: '#FFFFFF', food: '#00FFFF', obs: '#882200', obsFill: 'rgba(136, 34, 0, 0.4)' },
+    'abyss': { bg: '#000511', ui: 'rgba(0, 5, 20, 0.95)', acc: '#0088FF', txt: '#AABBFF', hl: '#00FFCC', snake: '#0044AA', snakeCore: '#88CCFF', head: '#FFFFFF', food: '#00FFCC', obs: '#002255', obsFill: 'rgba(0, 34, 85, 0.4)' }
 };
 
 function applyVisualTheme(themeKey) {
@@ -320,6 +321,7 @@ function relocateFood() {
 function renderMenuInterface() {
     uiElements.menuExclusives.forEach(el => el.classList.remove("hidden"));
     uiElements.layer.classList.add("wide-mode");
+    uiElements.menuLayout.classList.remove("paused-mode");
     uiElements.returnMenuBtn.classList.add("hidden");
     uiElements.startBtn.innerText = dictionary[currentLanguage].play;
     uiElements.canvas.classList.add("hidden");
@@ -372,6 +374,7 @@ function executePause() {
     
     uiElements.menuExclusives.forEach(el => el.classList.add("hidden"));
     uiElements.layer.classList.remove("wide-mode");
+    uiElements.menuLayout.classList.add("paused-mode");
     uiElements.returnMenuBtn.classList.remove("hidden");
     
     uiElements.layer.classList.remove("hidden");

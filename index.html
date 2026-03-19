@@ -18,56 +18,54 @@
     <div id="countdown-layer">3</div>
 
     <div id="ui-layer" class="wide-mode">
-        <h1 id="ui-title">Snake</h1>
+        <h1 id="ui-title">SNAKE</h1>
         
         <div id="end-status" class="hidden">
             <h2 id="end-reason" data-i18n="gameOver">Fin del Juego</h2>
             <div><span data-i18n="currentScoreLabel">Puntuación Actual</span>: <span id="final-score-val" class="score-highlight">0</span></div>
         </div>
         
-        <div class="menu-layout">
+        <div id="menu-layout" class="menu-layout">
             <div class="menu-col">
-                <div class="menu-exclusive">
-                    <div class="menu-section">
-                        <div class="section-title" data-i18n="gameSettings">Ajustes del Juego</div>
-                        <div class="control-group">
-                            <label for="lang-select" data-i18n="language">Idioma</label>
-                            <select id="lang-select">
-                                <option value="es">Español</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label for="game-mode" data-i18n="gameMode">Modo de Juego</label>
-                            <select id="game-mode">
-                                <option value="levels" data-i18n="levels" selected>Niveles</option>
-                                <option value="infinite" data-i18n="infinite">Infinito</option>
-                            </select>
-                        </div>
-                        <div class="control-group" id="level-select-group">
-                            <label for="start-level" data-i18n="startLevel">Comenzar en Nivel</label>
-                            <select id="start-level"></select>
-                        </div>
+                <div class="menu-section menu-exclusive">
+                    <div class="section-title" data-i18n="gameSettings">Ajustes del Juego</div>
+                    <div class="control-group">
+                        <label for="lang-select" data-i18n="language">Idioma</label>
+                        <select id="lang-select">
+                            <option value="es">Español</option>
+                            <option value="en">English</option>
+                        </select>
                     </div>
+                    <div class="control-group">
+                        <label for="game-mode" data-i18n="gameMode">Modo de Juego</label>
+                        <select id="game-mode">
+                            <option value="levels" data-i18n="levels" selected>Niveles</option>
+                            <option value="infinite" data-i18n="infinite">Infinito</option>
+                        </select>
+                    </div>
+                    <div class="control-group" id="level-select-group">
+                        <label for="start-level" data-i18n="startLevel">Comenzar en Nivel</label>
+                        <select id="start-level"></select>
+                    </div>
+                </div>
 
-                    <div class="menu-section">
-                        <div class="section-title" data-i18n="graphicsSettings">Gráficos</div>
-                        <div class="control-group">
-                            <label for="theme-select" data-i18n="theme">Tema Visual</label>
-                            <select id="theme-select">
-                                <option value="cyberpunk" data-i18n="themeCyberpunk">Neón Distópico</option>
-                                <option value="crimson" data-i18n="themeCrimson">Vacío Carmesí</option>
-                                <option value="toxic" data-i18n="themeToxic">Bosque Radiactivo</option>
-                                <option value="monochrome" data-i18n="themeMonochrome">Terminal Retro</option>
-                                <option value="synthwave" data-i18n="themeSynthwave">Retrowave 84</option>
-                                <option value="solar" data-i18n="themeSolar">Erupción Solar</option>
-                                <option value="abyss" data-i18n="themeAbyss">Fosa Abisal</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label data-i18n="particles">Partículas</label>
-                            <input type="checkbox" id="particles-toggle" checked>
-                        </div>
+                <div class="menu-section menu-exclusive">
+                    <div class="section-title" data-i18n="graphicsSettings">Gráficos</div>
+                    <div class="control-group">
+                        <label for="theme-select" data-i18n="theme">Tema Visual</label>
+                        <select id="theme-select">
+                            <option value="cyberpunk" data-i18n="themeCyberpunk">Neón Distópico</option>
+                            <option value="crimson" data-i18n="themeCrimson">Vacío Carmesí</option>
+                            <option value="toxic" data-i18n="themeToxic">Bosque Radiactivo</option>
+                            <option value="monochrome" data-i18n="themeMonochrome">Terminal Retro</option>
+                            <option value="synthwave" data-i18n="themeSynthwave">Retrowave 84</option>
+                            <option value="solar" data-i18n="themeSolar">Erupción Solar</option>
+                            <option value="abyss" data-i18n="themeAbyss">Fosa Abisal</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label data-i18n="particles">Partículas</label>
+                        <input type="checkbox" id="particles-toggle" checked>
                     </div>
                 </div>
 

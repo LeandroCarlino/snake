@@ -1,6 +1,6 @@
 :root {
     --bg-color: #0B0C10;
-    --ui-bg: rgba(31, 40, 51, 0.95);
+    --ui-bg: rgba(15, 20, 25, 0.95);
     --accent: #66FCF1;
     --text-main: #C5C6C7;
     --text-highlight: #F2A900;
@@ -54,11 +54,12 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: var(--ui-bg);
-    padding: 25px;
-    border: 2px solid var(--accent);
+    padding: 35px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     text-align: center;
-    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    backdrop-filter: blur(10px);
     z-index: 10;
     width: 90%;
     max-width: 450px;
@@ -68,23 +69,25 @@ body {
 }
 
 #ui-layer.wide-mode {
-    max-width: 800px;
+    max-width: 850px;
 }
 
-h1 {
+h1#ui-title {
+    font-size: clamp(2rem, 6vw, 3.5rem);
     color: var(--accent);
-    font-weight: 300;
-    letter-spacing: 2px;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 900;
+    letter-spacing: 8px;
     margin-top: 0;
-    text-transform: uppercase;
+    margin-bottom: 30px;
+    text-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
 }
 
 #end-status {
-    border: 1px solid var(--accent);
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.3);
     padding: 15px;
     border-radius: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 #end-status h2 {
@@ -100,39 +103,47 @@ h1 {
 }
 
 .menu-layout {
-    display: flex;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
     text-align: left;
+    margin-bottom: 25px;
+}
+
+.menu-layout.paused-mode {
+    grid-template-columns: 1fr;
 }
 
 .menu-col {
-    flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 15px;
 }
 
 .menu-section {
-    margin: 10px 0;
-    padding: 10px;
-    border: 1px solid var(--accent);
+    padding: 18px;
+    background: rgba(0, 0, 0, 0.25);
     border-radius: 8px;
-    background: rgba(0,0,0,0.3);
+    border: none;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
 }
 
 .section-title {
     color: var(--text-highlight);
     font-size: 12px;
+    font-weight: bold;
     text-transform: uppercase;
-    margin-bottom: 8px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 6px;
+    letter-spacing: 1px;
 }
 
 .control-group {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 6px 0;
+    margin: 10px 0;
 }
 
 label {
@@ -143,17 +154,22 @@ label {
 select, input[type="range"] {
     background-color: #000;
     color: var(--accent);
-    border: 1px solid var(--accent);
-    padding: 4px;
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    padding: 6px;
     border-radius: 4px;
     outline: none;
     font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+select:focus, input[type="range"]:focus {
+    border-color: var(--accent);
 }
 
 input[type="range"] {
-    width: 100px;
+    width: 120px;
     appearance: none;
-    height: 6px;
+    height: 4px;
     background: var(--text-main);
     cursor: pointer;
 }
@@ -164,44 +180,61 @@ input[type="range"]::-webkit-slider-thumb {
     height: 14px;
     background: var(--accent);
     border-radius: 50%;
+    box-shadow: 0 0 5px var(--accent);
 }
 
 input[type="checkbox"] {
     width: 18px;
     height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
 }
 
 .btn-group {
-    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 button {
-    background-color: transparent;
-    color: var(--accent);
-    border: 2px solid var(--accent);
-    padding: 10px 20px;
-    font-size: 14px;
+    background-color: var(--accent);
+    color: #000;
+    border: none;
+    padding: 16px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 1px;
     text-transform: uppercase;
     cursor: pointer;
-    border-radius: 4px;
-    margin-top: 8px;
+    border-radius: 6px;
     width: 100%;
-    transition: all 0.2s ease;
+    box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
+    transition: transform 0.1s, box-shadow 0.2s, background-color 0.2s;
 }
 
 button:hover {
-    background-color: var(--accent);
-    color: #000;
+    background-color: #7afff5;
+    box-shadow: 0 0 20px rgba(102, 252, 241, 0.5);
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(1px);
 }
 
 .btn-secondary {
-    border-color: var(--text-main);
+    border: 1px solid rgba(255,255,255,0.2);
     color: var(--text-main);
+    background: transparent;
+    box-shadow: none;
+    font-weight: normal;
 }
 
 .btn-secondary:hover {
-    background-color: var(--text-main);
-    color: #000;
+    background-color: rgba(255,255,255,0.05);
+    border-color: var(--text-main);
+    color: #fff;
+    box-shadow: none;
 }
 
 a {
@@ -217,16 +250,15 @@ a:hover {
 }
 
 .info-text {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-main);
-    line-height: 1.5;
-    margin-top: 4px;
+    line-height: 1.6;
 }
 
 canvas {
     background-color: transparent;
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 0 50px rgba(0,0,0,0.9);
     border-radius: 4px;
     margin-top: 60px;
     max-width: 95vw;
@@ -253,8 +285,8 @@ canvas {
 
 @media (max-width: 768px) {
     .menu-layout {
-        flex-direction: column;
-        gap: 0;
+        grid-template-columns: 1fr;
+        gap: 15px;
     }
     #ui-layer.wide-mode {
         max-width: 450px;
