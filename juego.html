@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Serpent: Entorno Operativo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake: Interfaz Segmentada</title>
     <style>
         :root {
             --bg-color: #0B0C10;
@@ -25,6 +26,7 @@
             height: 100vh;
             justify-content: center;
             transition: background-color 0.5s ease;
+            touch-action: none;
         }
         #hud-container {
             position: absolute;
@@ -39,13 +41,11 @@
             align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             z-index: 5;
-            transition: all 0.5s ease;
         }
         .hud-item {
-            font-size: 20px;
+            font-size: clamp(14px, 4vw, 20px);
             color: var(--accent);
-            letter-spacing: 2px;
-            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .hud-value {
             font-weight: bold;
@@ -57,19 +57,21 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: var(--ui-bg);
-            padding: 30px;
+            padding: 25px;
             border: 2px solid var(--accent);
             border-radius: 12px;
             text-align: center;
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
             z-index: 10;
-            width: 420px;
-            transition: all 0.5s ease;
+            width: 90%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         h1 {
             color: var(--accent);
             font-weight: 300;
-            letter-spacing: 4px;
+            letter-spacing: 2px;
             margin-top: 0;
             text-transform: uppercase;
         }
@@ -78,46 +80,50 @@
             background: rgba(0,0,0,0.4);
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         #end-status h2 {
             margin: 0 0 10px 0;
             color: var(--text-highlight);
-            text-transform: uppercase;
-            letter-spacing: 2px;
             font-size: 18px;
         }
         .menu-section {
-            margin: 15px 0;
-            padding: 12px;
+            margin: 10px 0;
+            padding: 10px;
             border: 1px solid var(--accent);
             border-radius: 8px;
             background: rgba(0,0,0,0.3);
             text-align: left;
         }
+        .section-title {
+            color: var(--text-highlight);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 4px;
+        }
         .control-group {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 8px 0;
+            margin: 6px 0;
         }
         label {
             color: var(--text-main);
             font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
         select, input[type="range"] {
             background-color: #000;
             color: var(--accent);
             border: 1px solid var(--accent);
-            padding: 5px;
+            padding: 4px;
             border-radius: 4px;
             outline: none;
             font-family: inherit;
         }
         input[type="range"] {
-            width: 120px;
+            width: 100px;
             appearance: none;
             height: 6px;
             background: var(--text-main);
@@ -134,20 +140,26 @@
             background-color: transparent;
             color: var(--accent);
             border: 2px solid var(--accent);
-            padding: 12px 30px;
-            font-size: 16px;
-            letter-spacing: 2px;
+            padding: 10px 20px;
+            font-size: 14px;
             text-transform: uppercase;
             cursor: pointer;
             border-radius: 4px;
-            margin-top: 10px;
+            margin-top: 8px;
             width: 100%;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         button:hover {
             background-color: var(--accent);
             color: #000;
-            box-shadow: 0 0 15px var(--accent);
+        }
+        .btn-secondary {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+        .btn-secondary:hover {
+            background-color: var(--text-main);
+            color: #000;
         }
         canvas {
             background-color: transparent;
@@ -155,13 +167,16 @@
             box-shadow: 0 0 40px rgba(0,0,0,0.8);
             border-radius: 4px;
             margin-top: 60px;
+            max-width: 95vw;
+            max-height: calc(100vh - 80px);
+            object-fit: contain;
         }
         #countdown-layer {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 120px;
+            font-size: clamp(60px, 15vw, 120px);
             font-weight: bold;
             color: var(--text-highlight);
             text-shadow: 0 0 20px rgba(0,0,0,0.8);
@@ -176,473 +191,684 @@
 <body>
 
     <div id="hud-container">
-        <div class="hud-item">Modo: <span class="hud-value" id="hud-mode">Infinito</span></div>
-        <div class="hud-item" id="hud-level-display">Nivel: <span class="hud-value" id="hud-level">1</span></div>
-        <div class="hud-item">Puntuación: <span class="hud-value" id="hud-score">0</span></div>
-        <div class="hud-item">Objetivo: <span class="hud-value" id="hud-target">-</span></div>
+        <div class="hud-item"><span data-i18n="mode">Modo</span>: <span class="hud-value" id="hud-mode">Infinito</span></div>
+        <div class="hud-item" id="hud-level-display"><span data-i18n="level">Nivel</span>: <span class="hud-value" id="hud-level">1</span></div>
+        <div class="hud-item"><span data-i18n="score">Puntuación</span>: <span class="hud-value" id="hud-score">0</span></div>
+        <div class="hud-item"><span data-i18n="target">Objetivo</span>: <span class="hud-value" id="hud-target">-</span></div>
     </div>
 
     <div id="countdown-layer">3</div>
 
     <div id="ui-layer">
-        <h1 id="main-title">Serpent</h1>
+        <h1 id="ui-title">Snake</h1>
         
         <div id="end-status" class="hidden">
-            <h2 id="end-reason">Anomalía Detectada</h2>
-            <div>Rendimiento Final: <span id="final-score-val" style="color: var(--accent); font-weight: bold; font-size: 24px;">0</span></div>
+            <h2 id="end-reason" data-i18n="gameOver">Fin del Juego</h2>
+            <div><span data-i18n="currentScoreLabel">Puntuación Actual</span>: <span id="final-score-val" style="color: var(--accent); font-weight: bold; font-size: 24px;">0</span></div>
         </div>
         
-        <div class="menu-section">
-            <div class="control-group">
-                <label for="theme-select">Estilo Visual</label>
-                <select id="theme-select">
-                    <option value="cyberpunk">Neón Distópico</option>
-                    <option value="crimson">Vacío Carmesí</option>
-                    <option value="toxic">Bosque Radiactivo</option>
-                    <option value="monochrome">Terminal Retro</option>
-                    <option value="synthwave">Retrowave 84</option>
-                    <option value="solar">Erupción Solar</option>
-                    <option value="abyss">Fosa Abisal</option>
-                </select>
+        <div id="menu-exclusive-content">
+            <div class="menu-section">
+                <div class="section-title" data-i18n="gameSettings">Ajustes del Juego</div>
+                <div class="control-group">
+                    <label for="lang-select" data-i18n="language">Idioma</label>
+                    <select id="lang-select">
+                        <option value="es">Español</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="game-mode" data-i18n="gameMode">Modo de Juego</label>
+                    <select id="game-mode">
+                        <option value="infinite" data-i18n="infinite">Infinito</option>
+                        <option value="levels" data-i18n="levels">Niveles</option>
+                    </select>
+                </div>
+                <div class="control-group" id="level-select-group">
+                    <label for="start-level" data-i18n="startLevel">Comenzar en Nivel</label>
+                    <select id="start-level"></select>
+                </div>
             </div>
-            <div class="control-group">
-                <label for="game-mode">Parámetro Operativo</label>
-                <select id="game-mode">
-                    <option value="infinite">Bucle Infinito</option>
-                    <option value="levels">Progresión Táctica</option>
-                </select>
-            </div>
-            <div class="control-group" id="level-select-group">
-                <label for="start-level">Punto de Inserción</label>
-                <select id="start-level"></select>
+
+            <div class="menu-section">
+                <div class="section-title" data-i18n="graphicsSettings">Gráficos</div>
+                <div class="control-group">
+                    <label for="theme-select" data-i18n="theme">Tema Visual</label>
+                    <select id="theme-select">
+                        <option value="cyberpunk">Neón Distópico</option>
+                        <option value="crimson">Vacío Carmesí</option>
+                        <option value="toxic">Bosque Radiactivo</option>
+                        <option value="monochrome">Terminal Retro</option>
+                        <option value="synthwave">Retrowave 84</option>
+                        <option value="solar">Erupción Solar</option>
+                        <option value="abyss">Fosa Abisal</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label data-i18n="particles">Partículas</label>
+                    <input type="checkbox" id="particles-toggle" checked style="width: 18px; height: 18px;">
+                </div>
             </div>
         </div>
 
         <div class="menu-section">
+            <div class="section-title" data-i18n="audioSettings">Audio</div>
             <div class="control-group">
-                <label for="master-volume">Nivel de Audio</label>
+                <label for="master-volume" data-i18n="volume">Volumen</label>
                 <input type="range" id="master-volume" min="0" max="1" step="0.05" value="0.5">
             </div>
             <div class="control-group">
-                <label>Música Dinámica</label>
-                <input type="checkbox" id="bgm-toggle" checked style="width: 20px; height: 20px;">
+                <label data-i18n="music">Música</label>
+                <input type="checkbox" id="bgm-toggle" checked style="width: 18px; height: 18px;">
             </div>
         </div>
 
-        <button id="startBtn">Iniciar Secuencia</button>
+        <button id="startBtn" data-i18n="play">Jugar</button>
+        <button id="returnMenuBtn" class="hidden btn-secondary" data-i18n="mainMenu">Volver al Menú Principal</button>
+        <button id="saveBtn" class="btn-secondary" data-i18n="saveProgress">Guardar Progreso</button>
     </div>
 
     <canvas id="gameCanvas" width="900" height="700"></canvas>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const uiLayer = document.getElementById("ui-layer");
-        const hudContainer = document.getElementById("hud-container");
-        const startBtn = document.getElementById("startBtn");
-        const modeSelect = document.getElementById("game-mode");
-        const themeSelect = document.getElementById("theme-select");
-        const volumeSlider = document.getElementById("master-volume");
-        const bgmToggle = document.getElementById("bgm-toggle");
-        const countdownLayer = document.getElementById("countdown-layer");
-        const startLevelSelect = document.getElementById("start-level");
-        const levelSelectGroup = document.getElementById("level-select-group");
-        
-        const endStatus = document.getElementById("end-status");
-        const endReason = document.getElementById("end-reason");
-        const finalScoreVal = document.getElementById("final-score-val");
-
-        const hudScore = document.getElementById("hud-score");
-        const hudLevel = document.getElementById("hud-level");
-        const hudTarget = document.getElementById("hud-target");
-        const hudMode = document.getElementById("hud-mode");
-        const hudLevelDisplay = document.getElementById("hud-level-display");
-
-        const themes = {
-            'cyberpunk': { css: { bg: '#0B0C10', ui: 'rgba(31, 40, 51, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900' }, render: { snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' } },
-            'crimson': { css: { bg: '#140000', ui: 'rgba(40, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300' }, render: { snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' } },
-            'toxic': { css: { bg: '#051105', ui: 'rgba(15, 30, 15, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3' }, render: { snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' } },
-            'monochrome': { css: { bg: '#000000', ui: 'rgba(20, 20, 20, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF' }, render: { snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' } },
-            'synthwave': { css: { bg: '#1a0033', ui: 'rgba(30, 0, 50, 0.95)', acc: '#FF00FF', txt: '#00FFFF', hl: '#FFFF00' }, render: { snake: '#CC00CC', snakeCore: '#00FFFF', head: '#FFFFFF', food: '#FFFF00', obs: '#FF4400', obsFill: 'rgba(255, 68, 0, 0.2)' } },
-            'solar': { css: { bg: '#2b1000', ui: 'rgba(50, 20, 0, 0.95)', acc: '#FF8800', txt: '#FFDDDD', hl: '#FFFFFF' }, render: { snake: '#CC5500', snakeCore: '#FFCC00', head: '#FFFFFF', food: '#00FFFF', obs: '#882200', obsFill: 'rgba(136, 34, 0, 0.4)' } },
-            'abyss': { css: { bg: '#000511', ui: 'rgba(0, 10, 30, 0.95)', acc: '#0088FF', txt: '#AABBFF', hl: '#00FFCC' }, render: { snake: '#0044AA', snakeCore: '#88CCFF', head: '#FFFFFF', food: '#00FFCC', obs: '#002255', obsFill: 'rgba(0, 34, 85, 0.4)' } }
+        const dictionary = {
+            es: { mode: "Modo", level: "Nivel", score: "Puntuación", target: "Objetivo", gameOver: "Fin del Juego", paused: "Sistema Pausado", currentScoreLabel: "Puntuación", finalScore: "Puntuación Final", gameSettings: "Ajustes del Juego", language: "Idioma", gameMode: "Modo de Juego", infinite: "Infinito", levels: "Niveles", startLevel: "Comenzar en Nivel", graphicsSettings: "Gráficos", theme: "Tema Visual", particles: "Efectos de Partículas", audioSettings: "Audio", volume: "Volumen", music: "Música", play: "Jugar", resume: "Reanudar Secuencia", restart: "Reiniciar Secuencia", saveProgress: "Guardar Progreso", saved: "¡Guardado!", mainMenu: "Volver al Menú Principal" },
+            en: { mode: "Mode", level: "Level", score: "Score", target: "Target", gameOver: "Game Over", paused: "System Paused", currentScoreLabel: "Score", finalScore: "Final Score", gameSettings: "Game Settings", language: "Language", gameMode: "Game Mode", infinite: "Infinite", levels: "Levels", startLevel: "Start at Level", graphicsSettings: "Graphics", theme: "Visual Theme", particles: "Particle Effects", audioSettings: "Audio", volume: "Volume", music: "Music", play: "Play", resume: "Resume Sequence", restart: "Restart Sequence", saveProgress: "Save Progress", saved: "Saved!", mainMenu: "Return to Main Menu" }
         };
 
-        let currentTheme = themes['cyberpunk'];
-        function applyTheme(themeKey) {
-            currentTheme = themes[themeKey];
-            document.documentElement.style.setProperty('--bg-color', currentTheme.css.bg);
-            document.documentElement.style.setProperty('--ui-bg', currentTheme.css.ui);
-            document.documentElement.style.setProperty('--accent', currentTheme.css.acc);
-            document.documentElement.style.setProperty('--text-main', currentTheme.css.txt);
-            document.documentElement.style.setProperty('--text-highlight', currentTheme.css.hl);
-        }
-        themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
+        let currentLanguage = navigator.language.startsWith('es') ? 'es' : 'en';
 
-        let maxUnlockedLevel = parseInt(localStorage.getItem('serpentMaxLevel')) || 1;
-        function updateLevelSelect() {
-            startLevelSelect.innerHTML = '';
-            for(let i=1; i<=maxUnlockedLevel; i++) {
-                let opt = document.createElement('option');
-                opt.value = i; opt.innerText = "Nivel " + i;
-                startLevelSelect.appendChild(opt);
-            }
-        }
-        updateLevelSelect();
-
-        modeSelect.addEventListener('change', (e) => {
-            if(e.target.value === 'infinite') levelSelectGroup.classList.add('disabled');
-            else levelSelectGroup.classList.remove('disabled');
-        });
-        levelSelectGroup.classList.add('disabled');
-
-        let isPlaying = false;
-        let lastTime = 0;
-        let reqAnimFrame;
-        let masterVol = parseFloat(volumeSlider.value);
-        volumeSlider.addEventListener('input', (e) => { masterVol = parseFloat(e.target.value); });
-
-        let audioCtx;
-        let musicInterval;
-        const pentaScale = [220, 261.63, 293.66, 329.63, 392.00, 440, 523.25, 587.33];
-        let currentNoteIndex = 3;
-
-        function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function playTone(freq, type, duration, baseVol) {
-            if (!audioCtx || masterVol === 0) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(baseVol * masterVol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
-        }
-
-        function playEatSound() { playTone(880, 'sine', 0.1, 0.2); playTone(1108, 'sine', 0.15, 0.2); }
-        function playCrashSound() { 
-            playTone(180, 'triangle', 0.4, 0.15); 
-            setTimeout(() => playTone(130, 'sine', 0.5, 0.15), 100); 
-        }
-        function playLevelUpSound() { 
-            playTone(440, 'sine', 0.1, 0.3); setTimeout(() => playTone(554, 'sine', 0.1, 0.3), 100); setTimeout(() => playTone(659, 'sine', 0.3, 0.3), 200);
-        }
-        function playTickSound() { playTone(1000, 'sine', 0.05, 0.1); }
-
-        function startMusic() {
-            if (!bgmToggle.checked || !audioCtx) return;
-            stopMusic();
-            musicInterval = setInterval(() => {
-                if(masterVol > 0 && isPlaying && !state.transitioning) {
-                    let step = Math.floor(Math.random() * 3) - 1;
-                    currentNoteIndex = Math.max(0, Math.min(pentaScale.length - 1, currentNoteIndex + step));
-                    let freq = pentaScale[currentNoteIndex] / 2;
-                    
-                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                    osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.08 * masterVol, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        function applyLanguage() {
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (dictionary[currentLanguage][key]) {
+                    if (element.tagName === 'OPTION') element.innerText = dictionary[currentLanguage][key];
+                    else element.innerText = dictionary[currentLanguage][key];
                 }
-            }, 300);
+            });
+            refreshLevelSelector();
         }
 
-        function stopMusic() { if (musicInterval) { clearInterval(musicInterval); musicInterval = null; } }
-        bgmToggle.addEventListener('change', () => { if (isPlaying) { if (bgmToggle.checked) startMusic(); else stopMusic(); } });
-
-        const baseConfig = { width: 900, height: 700, speed: 320, baseLength: 120, growthFactor: 50, thickness: 14, foodRadius: 10 };
-
-        let state = {
-            mode: 'infinite', level: 1, points: [], vx: 1, vy: 0, turnQueue: [],
-            targetLength: baseConfig.baseLength, score: 0, levelScore: 0,
-            food: {x: 0, y: 0}, speed: baseConfig.speed, obstacles: [],
-            targetForNextLevel: 0, transitioning: false, transitionEndTime: 0, lastTick: 0
+        const uiElements = {
+            langSelect: document.getElementById("lang-select"),
+            canvas: document.getElementById("gameCanvas"),
+            ctx: document.getElementById("gameCanvas").getContext("2d"),
+            layer: document.getElementById("ui-layer"),
+            hud: document.getElementById("hud-container"),
+            startBtn: document.getElementById("startBtn"),
+            saveBtn: document.getElementById("saveBtn"),
+            returnMenuBtn: document.getElementById("returnMenuBtn"),
+            menuExclusive: document.getElementById("menu-exclusive-content"),
+            modeSelect: document.getElementById("game-mode"),
+            themeSelect: document.getElementById("theme-select"),
+            particlesToggle: document.getElementById("particles-toggle"),
+            volumeSlider: document.getElementById("master-volume"),
+            bgmToggle: document.getElementById("bgm-toggle"),
+            countdown: document.getElementById("countdown-layer"),
+            startLevelSelect: document.getElementById("start-level"),
+            levelSelectGroup: document.getElementById("level-select-group"),
+            endStatus: document.getElementById("end-status"),
+            endReason: document.getElementById("end-reason"),
+            finalScoreVal: document.getElementById("final-score-val"),
+            hudScore: document.getElementById("hud-score"),
+            hudLevel: document.getElementById("hud-level"),
+            hudTarget: document.getElementById("hud-target"),
+            hudMode: document.getElementById("hud-mode"),
+            hudLevelDisplay: document.getElementById("hud-level-display")
         };
 
-        startBtn.addEventListener("click", startGame);
-        document.addEventListener("keydown", handleInput);
+        uiElements.langSelect.value = currentLanguage;
+        uiElements.langSelect.addEventListener('change', (e) => { currentLanguage = e.target.value; applyLanguage(); });
 
-        function handleInput(e) {
-            if (e.keyCode === 27 && isPlaying) {
-                endGame('abort');
+        const themeData = {
+            'cyberpunk': { bg: '#0B0C10', ui: 'rgba(31, 40, 51, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900', snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' },
+            'crimson': { bg: '#140000', ui: 'rgba(40, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300', snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' },
+            'toxic': { bg: '#051105', ui: 'rgba(15, 30, 15, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3', snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' },
+            'monochrome': { bg: '#000000', ui: 'rgba(20, 20, 20, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF', snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' },
+            'synthwave': { bg: '#1a0033', ui: 'rgba(30, 0, 50, 0.95)', acc: '#FF00FF', txt: '#00FFFF', hl: '#FFFF00', snake: '#CC00CC', snakeCore: '#00FFFF', head: '#FFFFFF', food: '#FFFF00', obs: '#FF4400', obsFill: 'rgba(255, 68, 0, 0.2)' },
+            'solar': { bg: '#2b1000', ui: 'rgba(50, 20, 0, 0.95)', acc: '#FF8800', txt: '#FFDDDD', hl: '#FFFFFF', snake: '#CC5500', snakeCore: '#FFCC00', head: '#FFFFFF', food: '#00FFFF', obs: '#882200', obsFill: 'rgba(136, 34, 0, 0.4)' },
+            'abyss': { bg: '#000511', ui: 'rgba(0, 10, 30, 0.95)', acc: '#0088FF', txt: '#AABBFF', hl: '#00FFCC', snake: '#0044AA', snakeCore: '#88CCFF', head: '#FFFFFF', food: '#00FFCC', obs: '#002255', obsFill: 'rgba(0, 34, 85, 0.4)' }
+        };
+
+        let currentThemeParams = themeData['cyberpunk'];
+        function applyVisualTheme(themeKey) {
+            currentThemeParams = themeData[themeKey];
+            document.documentElement.style.setProperty('--bg-color', currentThemeParams.bg);
+            document.documentElement.style.setProperty('--ui-bg', currentThemeParams.ui);
+            document.documentElement.style.setProperty('--accent', currentThemeParams.acc);
+            document.documentElement.style.setProperty('--text-main', currentThemeParams.txt);
+            document.documentElement.style.setProperty('--text-highlight', currentThemeParams.hl);
+        }
+        uiElements.themeSelect.addEventListener('change', (e) => applyVisualTheme(e.target.value));
+
+        let maxLevelUnlocked = parseInt(localStorage.getItem('snakeMaxLevelUnlocked')) || 1;
+        
+        function refreshLevelSelector() {
+            const previousSelection = uiElements.startLevelSelect.value || maxLevelUnlocked;
+            uiElements.startLevelSelect.innerHTML = '';
+            for(let i = 1; i <= maxLevelUnlocked; i++) {
+                let option = document.createElement('option');
+                option.value = i; 
+                option.innerText = `${dictionary[currentLanguage].level} ${i}`;
+                uiElements.startLevelSelect.appendChild(option);
+            }
+            uiElements.startLevelSelect.value = Math.min(previousSelection, maxLevelUnlocked);
+        }
+
+        uiElements.saveBtn.addEventListener('click', () => {
+            localStorage.setItem('snakeMaxLevelUnlocked', maxLevelUnlocked);
+            let originalText = uiElements.saveBtn.innerText;
+            uiElements.saveBtn.innerText = dictionary[currentLanguage].saved;
+            setTimeout(() => uiElements.saveBtn.innerText = originalText, 1500);
+        });
+
+        function syncModeUI() {
+            if(uiElements.modeSelect.value === 'infinite') uiElements.levelSelectGroup.classList.add('disabled');
+            else uiElements.levelSelectGroup.classList.remove('disabled');
+        }
+        uiElements.modeSelect.addEventListener('change', syncModeUI);
+
+        let systemState = 'menu'; // menu, paused, playing
+        let previousTime = 0;
+        let animationFrameId;
+        let audioVolume = parseFloat(uiElements.volumeSlider.value);
+        
+        uiElements.volumeSlider.addEventListener('input', (e) => { audioVolume = parseFloat(e.target.value); });
+
+        let audioContext;
+        let musicTimer;
+        
+        const musicPatterns = [
+            [220, 261.63, 329.63, 440], 
+            [261.63, 329.63, 392.00, 523.25], 
+            [293.66, 349.23, 440, 587.33]
+        ];
+        let currentPatternIndex = 0;
+        let notePosition = 0;
+
+        function initializeAudio() {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') audioContext.resume();
+        }
+
+        function triggerTone(frequency, waveform, duration, baseVolume) {
+            if (!audioContext || audioVolume === 0) return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.type = waveform;
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(baseVolume * audioVolume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            oscillator.connect(gainNode); 
+            gainNode.connect(audioContext.destination);
+            oscillator.start(); 
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playEventSound(type) {
+            if(type === 'eat') { triggerTone(880, 'sine', 0.1, 0.2); triggerTone(1108, 'sine', 0.15, 0.2); }
+            if(type === 'crash') triggerTone(150, 'square', 0.3, 0.2);
+            if(type === 'level') { triggerTone(440, 'sine', 0.1, 0.3); setTimeout(() => triggerTone(554, 'sine', 0.1, 0.3), 100); setTimeout(() => triggerTone(659, 'sine', 0.3, 0.3), 200); }
+            if(type === 'tick') triggerTone(1000, 'sine', 0.05, 0.1);
+        }
+
+        function toggleMusicSequence() {
+            if (!uiElements.bgmToggle.checked || !audioContext) return;
+            haltMusicSequence();
+            musicTimer = setInterval(() => {
+                if(audioVolume > 0 && systemState === 'playing' && !gameStateData.isTransitioning) {
+                    let freq = musicPatterns[currentPatternIndex][notePosition] / 2;
+                    notePosition++;
+                    if(notePosition >= 4) {
+                        notePosition = 0;
+                        currentPatternIndex = (currentPatternIndex + 1) % musicPatterns.length;
+                    }
+                    const osc = audioContext.createOscillator(); 
+                    const gain = audioContext.createGain();
+                    osc.type = 'triangle'; 
+                    osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+                    gain.gain.setValueAtTime(0.08 * audioVolume, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+                    osc.connect(gain); 
+                    gain.connect(audioContext.destination);
+                    osc.start(); 
+                    osc.stop(audioContext.currentTime + 0.2);
+                }
+            }, 250);
+        }
+        
+        function haltMusicSequence() { 
+            if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } 
+        }
+        
+        uiElements.bgmToggle.addEventListener('change', () => { 
+            if (systemState === 'playing') { if (uiElements.bgmToggle.checked) toggleMusicSequence(); else haltMusicSequence(); } 
+        });
+
+        const gameMetrics = { width: 900, height: 700, baseSpeed: 320, startLength: 120, growthFactor: 50, snakeWidth: 14, foodSize: 10 };
+
+        let gameStateData = {
+            mode: 'infinite', level: 1, bodySegments: [], velX: 1, velY: 0, inputQueue: [],
+            targetLength: gameMetrics.startLength, currentScore: 0, levelScore: 0,
+            foodPos: {x: 0, y: 0}, speed: gameMetrics.baseSpeed, obstacleData: [], particleData: [],
+            nextLevelRequirement: 0, isTransitioning: false, transitionEndLimit: 0, tickCounter: 0
+        };
+
+        uiElements.startBtn.addEventListener("click", () => {
+            if (systemState === 'paused') executeResume();
+            else executeStart();
+        });
+
+        uiElements.returnMenuBtn.addEventListener("click", () => {
+            executeReturnToMenu();
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.keyCode === 27) {
+                if (systemState === 'playing') executePause();
+                else if (systemState === 'paused') executeResume();
                 return;
             }
-            if (!isPlaying || state.transitioning) return;
-            const keys = { 37: {x:-1,y:0}, 38: {x:0,y:-1}, 39: {x:1,y:0}, 40: {x:0,y:1} };
-            if (keys[e.keyCode]) {
+            if (systemState !== 'playing' || gameStateData.isTransitioning) return;
+            const directionMap = { 37: {x:-1,y:0}, 38: {x:0,y:-1}, 39: {x:1,y:0}, 40: {x:0,y:1} };
+            if (directionMap[e.keyCode]) {
                 e.preventDefault();
-                if (state.turnQueue.length < 2) {
-                    let lastDir = state.turnQueue.length > 0 ? state.turnQueue[state.turnQueue.length - 1] : {x: state.vx, y: state.vy};
-                    let newDir = keys[e.keyCode];
-                    if ((newDir.x * lastDir.x + newDir.y * lastDir.y) === 0) state.turnQueue.push(newDir);
-                }
+                registerInput(directionMap[e.keyCode]);
             }
+        });
+
+        let swipeStartX = 0; let swipeStartY = 0;
+
+        document.addEventListener('touchstart', e => {
+            swipeStartX = e.changedTouches[0].screenX; swipeStartY = e.changedTouches[0].screenY;
+        }, {passive: false});
+
+        document.addEventListener('touchmove', e => {
+            if (systemState === 'playing') e.preventDefault();
+        }, {passive: false});
+
+        document.addEventListener('touchend', e => {
+            if (systemState !== 'playing' || gameStateData.isTransitioning) return;
+            let swipeEndX = e.changedTouches[0].screenX; let swipeEndY = e.changedTouches[0].screenY;
+            let deltaX = swipeEndX - swipeStartX; let deltaY = swipeEndY - swipeStartY;
+            
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (Math.abs(deltaX) > 30) registerInput({x: Math.sign(deltaX), y: 0});
+            } else {
+                if (Math.abs(deltaY) > 30) registerInput({x: 0, y: Math.sign(deltaY)});
+            }
+        });
+
+        function scanGamepadInput() {
+            if (systemState !== 'playing' || gameStateData.isTransitioning) return;
+            const activePads = navigator.getGamepads ? navigator.getGamepads() : [];
+            const controller = activePads[0];
+            if (!controller) return;
+
+            let commandDirection = null;
+            if (controller.buttons[12]?.pressed) commandDirection = {x:0, y:-1}; 
+            else if (controller.buttons[13]?.pressed) commandDirection = {x:0, y:1}; 
+            else if (controller.buttons[14]?.pressed) commandDirection = {x:-1, y:0}; 
+            else if (controller.buttons[15]?.pressed) commandDirection = {x:1, y:0}; 
+            else if (controller.axes[0] < -0.5) commandDirection = {x:-1, y:0}; 
+            else if (controller.axes[0] > 0.5) commandDirection = {x:1, y:0}; 
+            else if (controller.axes[1] < -0.5) commandDirection = {x:0, y:-1}; 
+            else if (controller.axes[1] > 0.5) commandDirection = {x:0, y:1}; 
+
+            if (commandDirection) registerInput(commandDirection);
         }
 
-        function spawnDynamicObstacle(edge) {
-            let obs = { isDynamic: true, w: 20 + Math.random() * 30, h: 20 + Math.random() * 30, x: 0, y: 0, dx: 0, dy: 0 };
-            let speed = 100 + Math.random() * 150 + (state.level * 10);
-            if (edge === 0) { obs.x = Math.random() * baseConfig.width; obs.y = -obs.h; obs.dy = speed; }
-            else if (edge === 1) { obs.x = baseConfig.width; obs.y = Math.random() * baseConfig.height; obs.dx = -speed; }
-            else if (edge === 2) { obs.x = Math.random() * baseConfig.width; obs.y = baseConfig.height; obs.dy = -speed; }
-            else { obs.x = -obs.w; obs.y = Math.random() * baseConfig.height; obs.dx = speed; }
-            return obs;
-        }
-
-        function generateObstacles(level) {
-            state.obstacles = [];
-            let staticCount = Math.min(level, 8);
-            for (let i = 0; i < staticCount; i++) {
-                let w = 40 + Math.random() * 60; let h = 40 + Math.random() * 60;
-                let valid = false; let attempts = 0; let obs;
-                while (!valid && attempts < 100) {
-                    obs = { x: 50 + Math.random() * (baseConfig.width - 100 - w), y: 50 + Math.random() * (baseConfig.height - 100 - h), w: w, h: h, isDynamic: false };
-                    if (Math.hypot(obs.x - 200, obs.y - 350) > 150) valid = true;
-                    attempts++;
-                }
-                if (valid) state.obstacles.push(obs);
-            }
-            if (level >= 4) {
-                let dynamicCount = Math.min(level - 3, 5);
-                for (let i = 0; i < dynamicCount; i++) state.obstacles.push(spawnDynamicObstacle(i % 4));
-            }
-        }
-
-        function spawnFood() {
-            let margin = 40; let valid = false;
-            while (!valid) {
-                state.food = { x: margin + Math.random() * (baseConfig.width - margin * 2), y: margin + Math.random() * (baseConfig.height - margin * 2) };
-                valid = true;
-                for (let obs of state.obstacles) {
-                    if (!obs.isDynamic && state.food.x > obs.x - 20 && state.food.x < obs.x + obs.w + 20 && state.food.y > obs.y - 20 && state.food.y < obs.y + obs.h + 20) {
-                        valid = false; break;
+        function registerInput(newVector) {
+            if (gameStateData.inputQueue.length < 2) {
+                let lastVector = gameStateData.inputQueue.length > 0 ? gameStateData.inputQueue[gameStateData.inputQueue.length - 1] : {x: gameStateData.velX, y: gameStateData.velY};
+                if ((newVector.x * lastVector.x + newVector.y * lastVector.y) === 0) {
+                    if (gameStateData.inputQueue.length === 0 || gameStateData.inputQueue[gameStateData.inputQueue.length - 1].x !== newVector.x || gameStateData.inputQueue[gameStateData.inputQueue.length - 1].y !== newVector.y) {
+                        gameStateData.inputQueue.push(newVector);
                     }
                 }
             }
         }
 
-        function startGame() {
-            initAudio();
-            state.mode = modeSelect.value;
-            state.level = state.mode === 'levels' ? parseInt(startLevelSelect.value) : 1;
-            state.score = 0; state.levelScore = 0;
-            state.speed = baseConfig.speed + ((state.level - 1) * 30); 
-            state.targetLength = baseConfig.baseLength;
-            state.targetForNextLevel = state.mode === 'levels' ? 5 + (state.level * 2) : Infinity;
+        function emitParticles(x, y, hexColor) {
+            if (!uiElements.particlesToggle.checked) return;
+            for(let i=0; i<15; i++) {
+                gameStateData.particleData.push({ x: x, y: y, vx: (Math.random()-0.5)*300, vy: (Math.random()-0.5)*300, life: 1, color: hexColor });
+            }
+        }
+
+        function populateObstacles(targetLevel) {
+            gameStateData.obstacleData = [];
+            let staticAmount = Math.min(targetLevel, 8);
+            for (let i = 0; i < staticAmount; i++) {
+                let w = 40 + Math.random() * 60; let h = 40 + Math.random() * 60;
+                let isValid = false; let attempts = 0; let obsNode;
+                while (!isValid && attempts < 100) {
+                    obsNode = { x: 50 + Math.random() * (gameMetrics.width - 100 - w), y: 50 + Math.random() * (gameMetrics.height - 100 - h), w: w, h: h, dynamic: false };
+                    if (Math.hypot(obsNode.x - 200, obsNode.y - 350) > 150) isValid = true;
+                    attempts++;
+                }
+                if (isValid) gameStateData.obstacleData.push(obsNode);
+            }
+            if (targetLevel >= 4) {
+                let dynamicAmount = Math.min(targetLevel - 3, 5);
+                for (let i = 0; i < dynamicAmount; i++) {
+                    let obsNode = { dynamic: true, w: 20 + Math.random() * 30, h: 20 + Math.random() * 30, x: 0, y: 0, dx: 0, dy: 0 };
+                    let speed = 100 + Math.random() * 150 + (targetLevel * 10);
+                    let edge = i % 4;
+                    if (edge === 0) { obsNode.x = Math.random() * gameMetrics.width; obsNode.y = -obsNode.h; obsNode.dy = speed; }
+                    else if (edge === 1) { obsNode.x = gameMetrics.width; obsNode.y = Math.random() * gameMetrics.height; obsNode.dx = -speed; }
+                    else if (edge === 2) { obsNode.x = Math.random() * gameMetrics.width; obsNode.y = gameMetrics.height; obsNode.dy = -speed; }
+                    else { obsNode.x = -obsNode.w; obsNode.y = Math.random() * gameMetrics.height; obsNode.dx = speed; }
+                    gameStateData.obstacleData.push(obsNode);
+                }
+            }
+        }
+
+        function relocateFood() {
+            let limitMargin = 40; let positionFound = false;
+            while (!positionFound) {
+                gameStateData.foodPos = { x: limitMargin + Math.random() * (gameMetrics.width - limitMargin * 2), y: limitMargin + Math.random() * (gameMetrics.height - limitMargin * 2) };
+                positionFound = true;
+                for (let obs of gameStateData.obstacleData) {
+                    if (!obs.dynamic && gameStateData.foodPos.x > obs.x - 20 && gameStateData.foodPos.x < obs.x + obs.w + 20 && gameStateData.foodPos.y > obs.y - 20 && gameStateData.foodPos.y < obs.y + obs.h + 20) {
+                        positionFound = false; break;
+                    }
+                }
+            }
+        }
+
+        function renderMenuInterface() {
+            uiElements.menuExclusive.classList.remove("hidden");
+            uiElements.saveBtn.classList.remove("hidden");
+            uiElements.returnMenuBtn.classList.add("hidden");
+            uiElements.startBtn.innerText = dictionary[currentLanguage].play;
+        }
+
+        function executeStart() {
+            initializeAudio();
+            gameStateData.mode = uiElements.modeSelect.value;
+            gameStateData.level = gameStateData.mode === 'levels' ? parseInt(uiElements.startLevelSelect.value) : 1;
+            gameStateData.currentScore = 0; 
+            gameStateData.levelScore = 0;
+            gameStateData.speed = gameMetrics.baseSpeed + ((gameStateData.level - 1) * 30); 
+            gameStateData.targetLength = gameMetrics.startLength;
+            gameStateData.nextLevelRequirement = gameStateData.mode === 'levels' ? 5 + (gameStateData.level * 2) : Infinity;
+            gameStateData.particleData = [];
             
-            endStatus.classList.add("hidden");
-            resetPositions();
-            updateHUD();
+            uiElements.endStatus.classList.add("hidden");
+            initializePositions();
+            syncHUD();
             
-            uiLayer.classList.add("hidden");
-            hudContainer.style.display = "flex";
-            if (state.mode === 'infinite') {
-                hudLevelDisplay.style.display = 'none';
-                hudTarget.parentElement.style.display = 'none';
+            uiElements.layer.classList.add("hidden");
+            uiElements.hud.style.display = "flex";
+            if (gameStateData.mode === 'infinite') {
+                uiElements.hudLevelDisplay.style.display = 'none';
+                uiElements.hudTarget.parentElement.style.display = 'none';
             } else {
-                hudLevelDisplay.style.display = 'block';
-                hudTarget.parentElement.style.display = 'block';
+                uiElements.hudLevelDisplay.style.display = 'block';
+                uiElements.hudTarget.parentElement.style.display = 'block';
             }
-            hudMode.innerText = state.mode === 'infinite' ? 'Infinito' : 'Progresión';
+            uiElements.hudMode.innerText = gameStateData.mode === 'infinite' ? dictionary[currentLanguage].infinite : dictionary[currentLanguage].levels;
 
-            isPlaying = true;
-            triggerTransition(true);
-            startMusic();
+            systemState = 'playing';
+            initiatePhaseTransition(true);
+            toggleMusicSequence();
             
-            if (reqAnimFrame) cancelAnimationFrame(reqAnimFrame);
-            reqAnimFrame = requestAnimationFrame(gameLoop);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            previousTime = performance.now();
+            animationFrameId = requestAnimationFrame(coreLoop);
         }
 
-        function triggerTransition(isInitial = false) {
-            state.transitioning = true;
-            state.transitionEndTime = performance.now() + 3000;
-            state.lastTick = 4;
-            countdownLayer.style.display = "block";
-            if(!isInitial) playLevelUpSound();
-        }
-
-        function resetPositions() {
-            state.points = [ {x: 200 - baseConfig.baseLength, y: baseConfig.height / 2}, {x: 200, y: baseConfig.height / 2} ];
-            state.vx = 1; state.vy = 0; state.turnQueue = [];
-            if (state.mode === 'levels') generateObstacles(state.level); else state.obstacles = [];
-            spawnFood();
-        }
-
-        function levelUp() {
-            state.level++; state.levelScore = 0; state.speed += 30;
-            state.targetForNextLevel = 5 + (state.level * 2);
+        function executePause() {
+            systemState = 'paused';
+            haltMusicSequence();
             
-            if(state.level > maxUnlockedLevel) {
-                maxUnlockedLevel = state.level;
-                localStorage.setItem('serpentMaxLevel', maxUnlockedLevel);
-                updateLevelSelect();
-            }
-
-            resetPositions();
-            updateHUD();
-            triggerTransition(false);
-        }
-
-        function endGame(reason) {
-            isPlaying = false;
-            stopMusic();
-            cancelAnimationFrame(reqAnimFrame);
+            uiElements.endStatus.classList.remove("hidden");
+            uiElements.endReason.innerText = dictionary[currentLanguage].paused;
+            uiElements.finalScoreVal.innerText = gameStateData.currentScore;
             
-            if (reason === 'crash') {
-                playCrashSound();
-                endReason.innerText = "Anomalía Detectada";
-            } else if (reason === 'abort') {
-                endReason.innerText = "Secuencia Interrumpida";
+            uiElements.menuExclusive.classList.add("hidden");
+            uiElements.saveBtn.classList.add("hidden");
+            uiElements.returnMenuBtn.classList.remove("hidden");
+            
+            uiElements.layer.classList.remove("hidden");
+            uiElements.startBtn.innerText = dictionary[currentLanguage].resume;
+        }
+
+        function executeResume() {
+            systemState = 'playing';
+            uiElements.endStatus.classList.add("hidden");
+            uiElements.layer.classList.add("hidden");
+            toggleMusicSequence();
+            previousTime = performance.now();
+        }
+
+        function executeReturnToMenu() {
+            systemState = 'menu';
+            renderMenuInterface();
+            uiElements.endStatus.classList.add("hidden");
+            uiElements.hud.style.display = "none";
+            uiElements.countdown.style.display = "none";
+            refreshLevelSelector();
+        }
+
+        function initiatePhaseTransition(initial) {
+            gameStateData.isTransitioning = true;
+            gameStateData.transitionEndLimit = performance.now() + 3000;
+            gameStateData.tickCounter = 4;
+            uiElements.countdown.style.display = "block";
+            if(!initial) playEventSound('level');
+        }
+
+        function initializePositions() {
+            gameStateData.bodySegments = [ {x: 200 - gameMetrics.startLength, y: gameMetrics.height / 2}, {x: 200, y: gameMetrics.height / 2} ];
+            gameStateData.velX = 1; gameStateData.velY = 0; gameStateData.inputQueue = [];
+            if (gameStateData.mode === 'levels') populateObstacles(gameStateData.level); else gameStateData.obstacleData = [];
+            relocateFood();
+        }
+
+        function processLevelAdvance() {
+            gameStateData.level++; 
+            gameStateData.levelScore = 0; 
+            gameStateData.speed += 30;
+            gameStateData.nextLevelRequirement = 5 + (gameStateData.level * 2);
+            gameStateData.targetLength = gameMetrics.startLength;
+            
+            if(gameStateData.level > maxLevelUnlocked) {
+                maxLevelUnlocked = gameStateData.level;
+                localStorage.setItem('snakeMaxLevelUnlocked', maxLevelUnlocked);
+                refreshLevelSelector();
             }
 
-            finalScoreVal.innerText = state.score;
-            endStatus.classList.remove("hidden");
-            uiLayer.classList.remove("hidden");
-            hudContainer.style.display = "none";
-            countdownLayer.style.display = "none";
-            startBtn.innerText = "Reiniciar Secuencia";
+            initializePositions();
+            syncHUD();
+            initiatePhaseTransition(false);
         }
 
-        function updateHUD() {
-            hudScore.innerText = state.score; hudLevel.innerText = state.level;
-            hudTarget.innerText = state.mode === 'levels' ? `${state.levelScore} / ${state.targetForNextLevel}` : '∞';
+        function terminateGame() {
+            systemState = 'menu';
+            haltMusicSequence();
+            playEventSound('crash');
+            
+            uiElements.endReason.innerText = dictionary[currentLanguage].gameOver;
+            uiElements.finalScoreVal.innerText = gameStateData.currentScore;
+            
+            renderMenuInterface();
+            
+            uiElements.endStatus.classList.remove("hidden");
+            uiElements.layer.classList.remove("hidden");
+            uiElements.hud.style.display = "none";
+            uiElements.countdown.style.display = "none";
+            uiElements.startBtn.innerText = dictionary[currentLanguage].restart;
+            refreshLevelSelector();
         }
 
-        function advanceTail(amount) {
-            while (amount > 0 && state.points.length > 1) {
-                let tail = state.points[0]; let next = state.points[1];
-                let dx = next.x - tail.x; let dy = next.y - tail.y;
-                let segLen = Math.hypot(dx, dy);
+        function syncHUD() {
+            uiElements.hudScore.innerText = gameStateData.currentScore; 
+            uiElements.hudLevel.innerText = gameStateData.level;
+            uiElements.hudTarget.innerText = gameStateData.mode === 'levels' ? `${gameStateData.levelScore} / ${gameStateData.nextLevelRequirement}` : '∞';
+        }
 
-                if (amount >= segLen) { amount -= segLen; state.points.shift(); } 
-                else { let ratio = amount / segLen; tail.x += dx * ratio; tail.y += dy * ratio; amount = 0; }
+        function contractTail(distanceRemaining) {
+            while (distanceRemaining > 0 && gameStateData.bodySegments.length > 1) {
+                let tailNode = gameStateData.bodySegments[0]; let nextNode = gameStateData.bodySegments[1];
+                let distX = nextNode.x - tailNode.x; let distY = nextNode.y - tailNode.y;
+                let segmentLength = Math.hypot(distX, distY);
+
+                if (distanceRemaining >= segmentLength) { distanceRemaining -= segmentLength; gameStateData.bodySegments.shift(); } 
+                else { let ratio = distanceRemaining / segmentLength; tailNode.x += distX * ratio; tailNode.y += distY * ratio; distanceRemaining = 0; }
             }
         }
 
-        function dist2(v, w) { return (v.x - w.x)*(v.x - w.x) + (v.y - w.y)*(v.y - w.y); }
-        function distToSegmentSquared(p, v, w) {
-            let l2 = dist2(v, w);
-            if (l2 == 0) return dist2(p, v);
+        function getSquaredDistance(v, w) { return (v.x - w.x)*(v.x - w.x) + (v.y - w.y)*(v.y - w.y); }
+        function checkSegmentCollisionSq(p, v, w) {
+            let l2 = getSquaredDistance(v, w);
+            if (l2 == 0) return getSquaredDistance(p, v);
             let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
             t = Math.max(0, Math.min(1, t));
-            return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+            return getSquaredDistance(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
         }
-        function rectIntersect(cx, cy, r, rx, ry, rw, rh) {
+        function evaluateRectIntersection(cx, cy, r, rx, ry, rw, rh) {
             let testX = cx; let testY = cy;
             if (cx < rx) testX = rx; else if (cx > rx + rw) testX = rx + rw;
             if (cy < ry) testY = ry; else if (cy > ry + rh) testY = ry + rh;
-            let distX = cx - testX; let distY = cy - testY;
-            return (distX*distX + distY*distY) <= (r*r);
+            let dX = cx - testX; let dY = cy - testY;
+            return (dX*dX + dY*dY) <= (r*r);
         }
 
-        function gameLoop(time) {
-            if (!isPlaying) return;
-            reqAnimFrame = requestAnimationFrame(gameLoop);
+        function coreLoop(timestamp) {
+            animationFrameId = requestAnimationFrame(coreLoop);
+            if (systemState !== 'playing') return;
 
-            let dt = (time - lastTime) / 1000;
-            if (dt > 0.1) dt = 0.1;
-            lastTime = time;
+            let deltaTime = (timestamp - previousTime) / 1000;
+            if (deltaTime > 0.1) deltaTime = 0.1;
+            previousTime = timestamp;
 
-            if (state.transitioning) {
-                let remaining = Math.ceil((state.transitionEndTime - time) / 1000);
-                if (remaining < state.lastTick && remaining > 0) {
-                    state.lastTick = remaining; countdownLayer.innerText = remaining; playTickSound();
+            scanGamepadInput();
+
+            if (gameStateData.isTransitioning) {
+                let secondsRemaining = Math.ceil((gameStateData.transitionEndLimit - timestamp) / 1000);
+                if (secondsRemaining < gameStateData.tickCounter && secondsRemaining > 0) {
+                    gameStateData.tickCounter = secondsRemaining; uiElements.countdown.innerText = secondsRemaining; playEventSound('tick');
                 }
-                if (time >= state.transitionEndTime) {
-                    state.transitioning = false; countdownLayer.style.display = "none"; playTone(880, 'square', 0.2, 0.3);
-                } else { draw(time); return; }
+                if (timestamp >= gameStateData.transitionEndLimit) {
+                    gameStateData.isTransitioning = false; uiElements.countdown.style.display = "none"; triggerTone(880, 'square', 0.2, 0.3);
+                } else { renderFrame(timestamp, deltaTime); return; }
             }
 
-            let head = state.points[state.points.length - 1];
+            let headPointer = gameStateData.bodySegments[gameStateData.bodySegments.length - 1];
 
-            if (state.turnQueue.length > 0) {
-                let prevVertex = state.points[state.points.length - 2];
-                if (Math.hypot(head.x - prevVertex.x, head.y - prevVertex.y) > baseConfig.thickness + 2) {
-                    let nextDir = state.turnQueue.shift(); state.points.push({x: head.x, y: head.y});
-                    state.vx = nextDir.x; state.vy = nextDir.y; head = state.points[state.points.length - 1];
+            if (gameStateData.inputQueue.length > 0) {
+                let prevNode = gameStateData.bodySegments[gameStateData.bodySegments.length - 2];
+                if (Math.hypot(headPointer.x - prevNode.x, headPointer.y - prevNode.y) > gameMetrics.snakeWidth + 2) {
+                    let execDir = gameStateData.inputQueue.shift(); gameStateData.bodySegments.push({x: headPointer.x, y: headPointer.y});
+                    gameStateData.velX = execDir.x; gameStateData.velY = execDir.y; headPointer = gameStateData.bodySegments[gameStateData.bodySegments.length - 1];
                 }
             }
 
-            head.x += state.vx * state.speed * dt; head.y += state.vy * state.speed * dt;
+            headPointer.x += gameStateData.velX * gameStateData.speed * deltaTime; headPointer.y += gameStateData.velY * gameStateData.speed * deltaTime;
 
-            for (let obs of state.obstacles) {
-                if (obs.isDynamic) {
-                    obs.x += obs.dx * dt; obs.y += obs.dy * dt;
-                    if (obs.x > baseConfig.width + 50 || obs.x < -obs.w - 50 || obs.y > baseConfig.height + 50 || obs.y < -obs.h - 50) {
-                        Object.assign(obs, spawnDynamicObstacle(Math.floor(Math.random() * 4)));
+            for (let obs of gameStateData.obstacleData) {
+                if (obs.dynamic) {
+                    obs.x += obs.dx * deltaTime; obs.y += obs.dy * deltaTime;
+                    if (obs.x > gameMetrics.width + 50 || obs.x < -obs.w - 50 || obs.y > gameMetrics.height + 50 || obs.y < -obs.h - 50) {
+                        let speed = 100 + Math.random() * 150 + (gameStateData.level * 10);
+                        let edgeType = Math.floor(Math.random() * 4);
+                        if (edgeType === 0) { obs.x = Math.random() * gameMetrics.width; obs.y = -obs.h; obs.dx = 0; obs.dy = speed; }
+                        else if (edgeType === 1) { obs.x = gameMetrics.width; obs.y = Math.random() * gameMetrics.height; obs.dx = -speed; obs.dy = 0; }
+                        else if (edgeType === 2) { obs.x = Math.random() * gameMetrics.width; obs.y = gameMetrics.height; obs.dx = 0; obs.dy = -speed; }
+                        else { obs.x = -obs.w; obs.y = Math.random() * gameMetrics.height; obs.dx = speed; obs.dy = 0; }
                     }
                 }
             }
 
-            let currentLen = 0;
-            for (let i = 0; i < state.points.length - 1; i++) currentLen += Math.hypot(state.points[i+1].x - state.points[i].x, state.points[i+1].y - state.points[i].y);
-            if (currentLen > state.targetLength) advanceTail(currentLen - state.targetLength);
+            let computedLength = 0;
+            for (let i = 0; i < gameStateData.bodySegments.length - 1; i++) computedLength += Math.hypot(gameStateData.bodySegments[i+1].x - gameStateData.bodySegments[i].x, gameStateData.bodySegments[i+1].y - gameStateData.bodySegments[i].y);
+            if (computedLength > gameStateData.targetLength) contractTail(computedLength - gameStateData.targetLength);
 
-            let headR = baseConfig.thickness / 2;
-            if (head.x < headR || head.x > baseConfig.width - headR || head.y < headR || head.y > baseConfig.height - headR) { endGame('crash'); return; }
-
-            let hitRadiusSq = (headR - 2) ** 2;
-            for (let i = 0; i < state.points.length - 3; i++) {
-                if (distToSegmentSquared(head, state.points[i], state.points[i+1]) < hitRadiusSq) { endGame('crash'); return; }
+            let headRadius = gameMetrics.snakeWidth / 2;
+            
+            if (headPointer.x < headRadius || headPointer.x > gameMetrics.width - headRadius || headPointer.y < headRadius || headPointer.y > gameMetrics.height - headRadius) { 
+                emitParticles(headPointer.x, headPointer.y, currentThemeParams.head);
+                terminateGame(); return; 
             }
 
-            for (let obs of state.obstacles) {
-                if (rectIntersect(head.x, head.y, headR, obs.x, obs.y, obs.w, obs.h)) { endGame('crash'); return; }
+            let hitThresholdSq = (headRadius - 2) ** 2;
+            for (let i = 0; i < gameStateData.bodySegments.length - 3; i++) {
+                if (checkSegmentCollisionSq(headPointer, gameStateData.bodySegments[i], gameStateData.bodySegments[i+1]) < hitThresholdSq) { 
+                    emitParticles(headPointer.x, headPointer.y, currentThemeParams.snake);
+                    terminateGame(); return; 
+                }
             }
 
-            if (Math.hypot(head.x - state.food.x, head.y - state.food.y) < (headR + baseConfig.foodRadius)) {
-                playEatSound(); state.score++; state.levelScore++; state.targetLength += baseConfig.growthFactor;
-                if (state.mode === 'infinite') state.speed += 2;
-                updateHUD();
-                if (state.mode === 'levels' && state.levelScore >= state.targetForNextLevel) levelUp(); else spawnFood();
+            for (let obs of gameStateData.obstacleData) {
+                if (evaluateRectIntersection(headPointer.x, headPointer.y, headRadius, obs.x, obs.y, obs.w, obs.h)) { 
+                    emitParticles(headPointer.x, headPointer.y, currentThemeParams.obs);
+                    terminateGame(); return; 
+                }
             }
 
-            draw(time);
+            if (Math.hypot(headPointer.x - gameStateData.foodPos.x, headPointer.y - gameStateData.foodPos.y) < (headRadius + gameMetrics.foodSize)) {
+                playEventSound('eat'); 
+                emitParticles(gameStateData.foodPos.x, gameStateData.foodPos.y, currentThemeParams.food);
+                gameStateData.currentScore++; gameStateData.levelScore++; gameStateData.targetLength += gameMetrics.growthFactor;
+                if (gameStateData.mode === 'infinite') gameStateData.speed += 2;
+                syncHUD();
+                if (gameStateData.mode === 'levels' && gameStateData.levelScore >= gameStateData.nextLevelRequirement) processLevelAdvance(); else relocateFood();
+            }
+
+            renderFrame(timestamp, deltaTime);
         }
 
-        function draw(time) {
-            ctx.clearRect(0, 0, baseConfig.width, baseConfig.height);
-            let rd = currentTheme.render;
+        function renderFrame(timeRef, dt) {
+            uiElements.ctx.clearRect(0, 0, gameMetrics.width, gameMetrics.height);
 
-            for (let obs of state.obstacles) {
-                ctx.fillStyle = rd.obsFill; ctx.strokeStyle = rd.obs; ctx.lineWidth = 2;
-                ctx.fillRect(obs.x, obs.y, obs.w, obs.h); ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
-                ctx.beginPath();
-                for(let i=0; i<obs.w+obs.h; i+=15) { ctx.moveTo(obs.x + i, obs.y); ctx.lineTo(obs.x, obs.y + i); }
-                ctx.strokeStyle = rd.obsFill; ctx.stroke();
+            for (let obs of gameStateData.obstacleData) {
+                uiElements.ctx.fillStyle = currentThemeParams.obsFill; uiElements.ctx.strokeStyle = currentThemeParams.obs; uiElements.ctx.lineWidth = 2;
+                uiElements.ctx.fillRect(obs.x, obs.y, obs.w, obs.h); uiElements.ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+                uiElements.ctx.beginPath();
+                for(let i=0; i<obs.w+obs.h; i+=15) { uiElements.ctx.moveTo(obs.x + i, obs.y); uiElements.ctx.lineTo(obs.x, obs.y + i); }
+                uiElements.ctx.strokeStyle = currentThemeParams.obsFill; uiElements.ctx.stroke();
             }
 
-            ctx.save(); ctx.translate(state.food.x, state.food.y);
-            let scale = 1 + Math.sin(time / 150) * 0.2; ctx.scale(scale, scale); ctx.rotate(time / 800);
-            ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(12, 0); ctx.lineTo(0, 12); ctx.lineTo(-12, 0); ctx.closePath();
-            ctx.fillStyle = rd.food; ctx.shadowColor = rd.food; ctx.shadowBlur = 15; ctx.fill(); ctx.restore();
+            uiElements.ctx.save(); uiElements.ctx.translate(gameStateData.foodPos.x, gameStateData.foodPos.y);
+            let foodScale = 1 + Math.sin(timeRef / 150) * 0.2; uiElements.ctx.scale(foodScale, foodScale); uiElements.ctx.rotate(timeRef / 800);
+            uiElements.ctx.beginPath(); uiElements.ctx.moveTo(0, -12); uiElements.ctx.lineTo(12, 0); uiElements.ctx.lineTo(0, 12); uiElements.ctx.lineTo(-12, 0); uiElements.ctx.closePath();
+            uiElements.ctx.fillStyle = currentThemeParams.food; uiElements.ctx.shadowColor = currentThemeParams.food; uiElements.ctx.shadowBlur = 15; uiElements.ctx.fill(); uiElements.ctx.restore();
 
-            if (state.points.length > 1) {
-                ctx.beginPath(); ctx.moveTo(state.points[0].x, state.points[0].y);
-                for (let i = 1; i < state.points.length; i++) ctx.lineTo(state.points[i].x, state.points[i].y);
-                ctx.strokeStyle = rd.snake; ctx.lineWidth = baseConfig.thickness; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-                ctx.shadowColor = rd.snake; ctx.shadowBlur = 10; ctx.stroke();
+            if (gameStateData.bodySegments.length > 1) {
+                uiElements.ctx.beginPath(); uiElements.ctx.moveTo(gameStateData.bodySegments[0].x, gameStateData.bodySegments[0].y);
+                for (let i = 1; i < gameStateData.bodySegments.length; i++) uiElements.ctx.lineTo(gameStateData.bodySegments[i].x, gameStateData.bodySegments[i].y);
+                uiElements.ctx.strokeStyle = currentThemeParams.snake; uiElements.ctx.lineWidth = gameMetrics.snakeWidth; uiElements.ctx.lineCap = 'round'; uiElements.ctx.lineJoin = 'round';
+                uiElements.ctx.shadowColor = currentThemeParams.snake; uiElements.ctx.shadowBlur = 10; uiElements.ctx.stroke();
 
-                ctx.beginPath(); ctx.moveTo(state.points[0].x, state.points[0].y);
-                for (let i = 1; i < state.points.length; i++) ctx.lineTo(state.points[i].x, state.points[i].y);
-                ctx.strokeStyle = rd.snakeCore; ctx.lineWidth = 4; ctx.shadowBlur = 0; ctx.stroke();
+                uiElements.ctx.beginPath(); uiElements.ctx.moveTo(gameStateData.bodySegments[0].x, gameStateData.bodySegments[0].y);
+                for (let i = 1; i < gameStateData.bodySegments.length; i++) uiElements.ctx.lineTo(gameStateData.bodySegments[i].x, gameStateData.bodySegments[i].y);
+                uiElements.ctx.strokeStyle = currentThemeParams.snakeCore; uiElements.ctx.lineWidth = 4; uiElements.ctx.shadowBlur = 0; uiElements.ctx.stroke();
             }
 
-            let head = state.points[state.points.length - 1];
-            ctx.save(); ctx.translate(head.x, head.y); ctx.rotate(Math.atan2(state.vy, state.vx));
-            ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-6, 10); ctx.lineTo(-2, 0); ctx.lineTo(-6, -10); ctx.closePath();
-            ctx.fillStyle = rd.head; ctx.shadowColor = rd.head; ctx.shadowBlur = 15; ctx.fill(); ctx.restore();
+            let activeHead = gameStateData.bodySegments[gameStateData.bodySegments.length - 1];
+            uiElements.ctx.save(); uiElements.ctx.translate(activeHead.x, activeHead.y); uiElements.ctx.rotate(Math.atan2(gameStateData.velY, gameStateData.velX));
+            uiElements.ctx.beginPath(); uiElements.ctx.moveTo(14, 0); uiElements.ctx.lineTo(-6, 10); uiElements.ctx.lineTo(-2, 0); uiElements.ctx.lineTo(-6, -10); uiElements.ctx.closePath();
+            uiElements.ctx.fillStyle = currentThemeParams.head; uiElements.ctx.shadowColor = currentThemeParams.head; uiElements.ctx.shadowBlur = 15; uiElements.ctx.fill(); uiElements.ctx.restore();
+
+            for (let i = gameStateData.particleData.length - 1; i >= 0; i--) {
+                let p = gameStateData.particleData[i];
+                p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 1.5;
+                if (p.life <= 0) { gameStateData.particleData.splice(i, 1); continue; }
+                uiElements.ctx.globalAlpha = p.life; uiElements.ctx.fillStyle = p.color;
+                uiElements.ctx.fillRect(p.x, p.y, 4, 4);
+            }
+            uiElements.ctx.globalAlpha = 1;
             
-            if(state.transitioning) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0, baseConfig.width, baseConfig.height); }
+            if(gameStateData.isTransitioning) { uiElements.ctx.fillStyle = 'rgba(0,0,0,0.5)'; uiElements.ctx.fillRect(0,0, gameMetrics.width, gameMetrics.height); }
         }
         
-        applyTheme('cyberpunk');
+        applyLanguage();
+        applyVisualTheme('cyberpunk');
+        refreshLevelSelector();
+        syncModeUI();
+        renderMenuInterface();
     </script>
 </body>
 </html>
