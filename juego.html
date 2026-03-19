@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Snake Fluido Elegante</title>
+    <title>Serpent: Advanced</title>
     <style>
         body {
             display: flex;
@@ -12,8 +12,34 @@
             color: #C5C6C7;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding-top: 30px;
+            padding: 0;
             overflow: hidden;
+            height: 100vh;
+            justify-content: center;
+        }
+        #hud-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #1F2833;
+            border-bottom: 2px solid #45A29E;
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+        .hud-item {
+            font-size: 20px;
+            color: #66FCF1;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .hud-value {
+            font-weight: bold;
+            color: #F2A900;
         }
         #ui-layer {
             position: absolute;
@@ -27,7 +53,7 @@
             text-align: center;
             box-shadow: 0 0 30px rgba(102, 252, 241, 0.3);
             z-index: 10;
-            width: 350px;
+            width: 400px;
         }
         h1 {
             color: #66FCF1;
@@ -36,23 +62,32 @@
             margin-top: 0;
             text-transform: uppercase;
         }
-        .score-display {
-            font-size: 1.2em;
+        .menu-section {
             margin: 20px 0;
-            color: #45A29E;
+            padding: 15px;
+            border: 1px solid #45A29E;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
         }
-        .score-display span {
+        .control-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+        label {
+            color: #C5C6C7;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        select, input[type="checkbox"] {
+            background-color: #0B0C10;
             color: #66FCF1;
-            font-weight: bold;
-        }
-        canvas {
-            background-color: #12141A;
-            border: 1px solid #1F2833;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border: 1px solid #45A29E;
+            padding: 5px;
             border-radius: 4px;
-            max-width: 95vw;
-            max-height: 90vh;
-            object-fit: contain;
+            outline: none;
         }
         button {
             background-color: transparent;
@@ -64,7 +99,8 @@
             text-transform: uppercase;
             cursor: pointer;
             border-radius: 4px;
-            margin-top: 15px;
+            margin-top: 10px;
+            width: 100%;
             transition: all 0.3s ease;
         }
         button:hover {
@@ -72,74 +108,182 @@
             color: #0B0C10;
             box-shadow: 0 0 15px #66FCF1;
         }
-        #hud {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 24px;
-            color: #66FCF1;
-            font-weight: 300;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
-            display: none;
-            z-index: 5;
+        canvas {
+            background-color: #12141A;
+            border: 1px solid #1F2833;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border-radius: 4px;
+            margin-top: 60px;
         }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div id="hud">0</div>
+    <div id="hud-container">
+        <div class="hud-item" id="hud-mode-display">Modo: <span class="hud-value" id="hud-mode">Infinito</span></div>
+        <div class="hud-item" id="hud-level-display">Nivel: <span class="hud-value" id="hud-level">1</span></div>
+        <div class="hud-item">Puntuación: <span class="hud-value" id="hud-score">0</span></div>
+        <div class="hud-item">Objetivo: <span class="hud-value" id="hud-target">-</span></div>
+    </div>
 
     <div id="ui-layer">
         <h1>Serpent</h1>
-        <div class="score-display">
-            Récord: <span id="highScoreDisplay">0</span><br>
-            Puntuación: <span id="lastScoreDisplay">0</span>
+        
+        <div class="menu-section">
+            <div class="control-group">
+                <label for="game-mode">Modo de Juego</label>
+                <select id="game-mode">
+                    <option value="infinite">Infinito</option>
+                    <option value="levels">Niveles</option>
+                </select>
+            </div>
+            <div style="font-size: 12px; color: #888; text-align: left; margin-top: 5px;" id="mode-desc">
+                Sobrevive el mayor tiempo posible sin límites.
+            </div>
         </div>
-        <p style="font-size: 0.8em; color: #888;">Controles: Flechas direccionales</p>
-        <button id="startBtn">Iniciar</button>
+
+        <div class="menu-section">
+            <div class="control-group">
+                <label for="sfx-toggle">Efectos de Sonido</label>
+                <input type="checkbox" id="sfx-toggle" checked>
+            </div>
+            <div class="control-group">
+                <label for="bgm-toggle">Música</label>
+                <input type="checkbox" id="bgm-toggle" checked>
+            </div>
+        </div>
+
+        <button id="startBtn">Iniciar Secuencia</button>
     </div>
 
-    <canvas id="gameCanvas" width="800" height="800"></canvas>
+    <canvas id="gameCanvas" width="800" height="700"></canvas>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const uiLayer = document.getElementById("ui-layer");
-        const hud = document.getElementById("hud");
+        const hudContainer = document.getElementById("hud-container");
         const startBtn = document.getElementById("startBtn");
-        const highScoreDisplay = document.getElementById("highScoreDisplay");
-        const lastScoreDisplay = document.getElementById("lastScoreDisplay");
+        const modeSelect = document.getElementById("game-mode");
+        const modeDesc = document.getElementById("mode-desc");
+        const sfxToggle = document.getElementById("sfx-toggle");
+        const bgmToggle = document.getElementById("bgm-toggle");
+
+        const hudScore = document.getElementById("hud-score");
+        const hudLevel = document.getElementById("hud-level");
+        const hudTarget = document.getElementById("hud-target");
+        const hudMode = document.getElementById("hud-mode");
+        const hudLevelDisplay = document.getElementById("hud-level-display");
 
         let isPlaying = false;
         let lastTime = 0;
         let reqAnimFrame;
 
-        // Configuración
-        const config = {
+        // Audio System (Web Audio API)
+        let audioCtx;
+        let musicOscillator;
+        let musicGain;
+        let musicInterval;
+        let noteIndex = 0;
+        const melody = [220, 246, 261, 293, 329, 293, 261, 246]; // A minor scale snippet
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, vol) {
+            if (!sfxToggle.checked || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playEatSound() { playTone(880, 'sine', 0.1, 0.1); playTone(1108, 'sine', 0.15, 0.1); }
+        function playCrashSound() { playTone(150, 'sawtooth', 0.5, 0.2); playTone(100, 'square', 0.6, 0.2); }
+        function playLevelUpSound() { 
+            playTone(440, 'sine', 0.1, 0.1); 
+            setTimeout(() => playTone(554, 'sine', 0.1, 0.1), 100);
+            setTimeout(() => playTone(659, 'sine', 0.2, 0.1), 200);
+        }
+
+        function startMusic() {
+            if (!bgmToggle.checked || !audioCtx) return;
+            stopMusic();
+            musicInterval = setInterval(() => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(melody[noteIndex] / 2, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+                noteIndex = (noteIndex + 1) % melody.length;
+            }, 250);
+        }
+
+        function stopMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+        }
+
+        bgmToggle.addEventListener('change', () => {
+            if (isPlaying) {
+                if (bgmToggle.checked) startMusic();
+                else stopMusic();
+            }
+        });
+
+        // Game Configuration
+        const baseConfig = {
             width: 800,
-            height: 800,
-            speed: 350, // Píxeles por segundo
-            baseLength: 120,
-            growthFactor: 60,
-            thickness: 16,
+            height: 700,
+            speed: 300,
+            baseLength: 100,
+            growthFactor: 50,
+            thickness: 14,
             foodRadius: 10
         };
 
         let state = {
+            mode: 'infinite',
+            level: 1,
             points: [],
-            vx: 1,
-            vy: 0,
+            vx: 1, vy: 0,
             turnQueue: [],
-            targetLength: config.baseLength,
+            targetLength: baseConfig.baseLength,
             score: 0,
-            food: {x: 0, y: 0}
+            levelScore: 0,
+            food: {x: 0, y: 0},
+            speed: baseConfig.speed,
+            obstacles: [],
+            targetForNextLevel: 0
         };
 
-        let highScore = localStorage.getItem("serpentHighScore") || 0;
-        highScoreDisplay.innerText = highScore;
+        modeSelect.addEventListener("change", (e) => {
+            if (e.target.value === 'infinite') {
+                modeDesc.innerText = "Sobrevive el mayor tiempo posible sin límites.";
+            } else {
+                modeDesc.innerText = "Supera niveles alcanzando el objetivo. Cuidado con los obstáculos.";
+            }
+        });
 
         startBtn.addEventListener("click", startGame);
         document.addEventListener("keydown", handleInput);
@@ -149,16 +293,9 @@
             const keys = { 37: {x:-1,y:0}, 38: {x:0,y:-1}, 39: {x:1,y:0}, 40: {x:0,y:1} };
             if (keys[e.keyCode]) {
                 e.preventDefault();
-                
-                // Evitar encolar demasiados giros
                 if (state.turnQueue.length < 2) {
-                    let lastDir = state.turnQueue.length > 0 ? 
-                        state.turnQueue[state.turnQueue.length - 1] : 
-                        {x: state.vx, y: state.vy};
-                    
+                    let lastDir = state.turnQueue.length > 0 ? state.turnQueue[state.turnQueue.length - 1] : {x: state.vx, y: state.vy};
                     let newDir = keys[e.keyCode];
-                    
-                    // Solo permitir giros de 90 grados
                     if ((newDir.x * lastDir.x + newDir.y * lastDir.y) === 0) {
                         state.turnQueue.push(newDir);
                     }
@@ -166,49 +303,119 @@
             }
         }
 
+        function generateObstacles(level) {
+            state.obstacles = [];
+            const numObstacles = level * 2;
+            for (let i = 0; i < numObstacles; i++) {
+                let w = 40 + Math.random() * 60;
+                let h = 40 + Math.random() * 60;
+                let valid = false;
+                let attempts = 0;
+                let obs;
+                while (!valid && attempts < 100) {
+                    obs = {
+                        x: 50 + Math.random() * (baseConfig.width - 100 - w),
+                        y: 50 + Math.random() * (baseConfig.height - 100 - h),
+                        w: w, h: h
+                    };
+                    // Prevent spawning near start zone (center left)
+                    let distToStart = Math.hypot(obs.x - 200, obs.y - 350);
+                    if (distToStart > 150) valid = true;
+                    attempts++;
+                }
+                if (valid) state.obstacles.push(obs);
+            }
+        }
+
         function spawnFood() {
             let margin = 40;
-            state.food = {
-                x: margin + Math.random() * (config.width - margin * 2),
-                y: margin + Math.random() * (config.height - margin * 2)
-            };
+            let valid = false;
+            while (!valid) {
+                state.food = {
+                    x: margin + Math.random() * (baseConfig.width - margin * 2),
+                    y: margin + Math.random() * (baseConfig.height - margin * 2)
+                };
+                valid = true;
+                // Check obstacle collision for food
+                for (let obs of state.obstacles) {
+                    if (state.food.x > obs.x - 20 && state.food.x < obs.x + obs.w + 20 &&
+                        state.food.y > obs.y - 20 && state.food.y < obs.y + obs.h + 20) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
         }
 
         function startGame() {
-            state.points = [
-                {x: 400 - config.baseLength, y: 400},
-                {x: 400, y: 400}
-            ];
-            state.vx = 1;
-            state.vy = 0;
-            state.turnQueue = [];
-            state.targetLength = config.baseLength;
+            initAudio();
+            state.mode = modeSelect.value;
+            state.level = 1;
             state.score = 0;
-            hud.innerText = "0";
-
-            spawnFood();
+            state.levelScore = 0;
+            state.speed = baseConfig.speed;
+            state.targetLength = baseConfig.baseLength;
+            state.targetForNextLevel = state.mode === 'levels' ? 5 : Infinity;
+            
+            resetPositions();
+            updateHUD();
             
             uiLayer.classList.add("hidden");
-            hud.style.display = "block";
+            hudContainer.style.display = "flex";
+            if (state.mode === 'infinite') {
+                hudLevelDisplay.style.display = 'none';
+                hudTarget.parentElement.style.display = 'none';
+            } else {
+                hudLevelDisplay.style.display = 'block';
+                hudTarget.parentElement.style.display = 'block';
+            }
+            hudMode.innerText = state.mode === 'infinite' ? 'Infinito' : 'Niveles';
+
             isPlaying = true;
             lastTime = performance.now();
+            startMusic();
             
             if (reqAnimFrame) cancelAnimationFrame(reqAnimFrame);
             reqAnimFrame = requestAnimationFrame(gameLoop);
         }
 
+        function resetPositions() {
+            state.points = [
+                {x: 200 - baseConfig.baseLength, y: baseConfig.height / 2},
+                {x: 200, y: baseConfig.height / 2}
+            ];
+            state.vx = 1;
+            state.vy = 0;
+            state.turnQueue = [];
+            if (state.mode === 'levels') generateObstacles(state.level);
+            else state.obstacles = [];
+            spawnFood();
+        }
+
+        function levelUp() {
+            playLevelUpSound();
+            state.level++;
+            state.levelScore = 0;
+            state.speed += 40;
+            state.targetForNextLevel = 5 + (state.level * 2);
+            resetPositions();
+            updateHUD();
+        }
+
         function gameOver() {
             isPlaying = false;
+            stopMusic();
+            playCrashSound();
             cancelAnimationFrame(reqAnimFrame);
             uiLayer.classList.remove("hidden");
-            hud.style.display = "none";
-            
-            lastScoreDisplay.innerText = state.score;
-            if (state.score > highScore) {
-                highScore = state.score;
-                localStorage.setItem("serpentHighScore", highScore);
-                highScoreDisplay.innerText = highScore;
-            }
+            hudContainer.style.display = "none";
+            startBtn.innerText = "Reiniciar Secuencia";
+        }
+
+        function updateHUD() {
+            hudScore.innerText = state.score;
+            hudLevel.innerText = state.level;
+            hudTarget.innerText = state.mode === 'levels' ? `${state.levelScore} / ${state.targetForNextLevel}` : '∞';
         }
 
         function advanceTail(amount) {
@@ -232,13 +439,22 @@
         }
 
         function dist2(v, w) { return (v.x - w.x)*(v.x - w.x) + (v.y - w.y)*(v.y - w.y); }
-        
         function distToSegmentSquared(p, v, w) {
             let l2 = dist2(v, w);
             if (l2 == 0) return dist2(p, v);
             let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
             t = Math.max(0, Math.min(1, t));
             return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+        }
+
+        function rectIntersect(cx, cy, r, rx, ry, rw, rh) {
+            let testX = cx;
+            let testY = cy;
+            if (cx < rx) testX = rx; else if (cx > rx + rw) testX = rx + rw;
+            if (cy < ry) testY = ry; else if (cy > ry + rh) testY = ry + rh;
+            let distX = cx - testX;
+            let distY = cy - testY;
+            return (distX*distX + distY*distY) <= (r*r);
         }
 
         function gameLoop(time) {
@@ -251,44 +467,38 @@
 
             let head = state.points[state.points.length - 1];
 
-            // Procesar giros pendientes
             if (state.turnQueue.length > 0) {
                 let prevVertex = state.points[state.points.length - 2];
                 let distFromTurn = Math.hypot(head.x - prevVertex.x, head.y - prevVertex.y);
-                
-                // Asegurar distancia mínima antes del próximo vértice para evitar colapso
-                if (distFromTurn > config.thickness + 2) {
+                if (distFromTurn > baseConfig.thickness + 2) {
                     let nextDir = state.turnQueue.shift();
                     state.points.push({x: head.x, y: head.y});
                     state.vx = nextDir.x;
                     state.vy = nextDir.y;
-                    head = state.points[state.points.length - 1]; // Actualizar referencia a nueva cabeza
+                    head = state.points[state.points.length - 1];
                 }
             }
 
-            // Mover cabeza
-            head.x += state.vx * config.speed * dt;
-            head.y += state.vy * config.speed * dt;
+            head.x += state.vx * state.speed * dt;
+            head.y += state.vy * state.speed * dt;
 
-            // Calcular longitud actual
             let currentLen = 0;
             for (let i = 0; i < state.points.length - 1; i++) {
                 currentLen += Math.hypot(state.points[i+1].x - state.points[i].x, state.points[i+1].y - state.points[i].y);
             }
 
-            // Mover cola
             if (currentLen > state.targetLength) {
                 advanceTail(currentLen - state.targetLength);
             }
 
-            // Colisiones de pared
-            if (head.x < 0 || head.x > config.width || head.y < 0 || head.y > config.height) {
+            let headR = baseConfig.thickness / 2;
+
+            if (head.x < headR || head.x > baseConfig.width - headR || head.y < headR || head.y > baseConfig.height - headR) {
                 gameOver();
                 return;
             }
 
-            // Colisiones con el cuerpo
-            let hitRadiusSq = (config.thickness / 2 - 1) ** 2;
+            let hitRadiusSq = (headR - 2) ** 2;
             for (let i = 0; i < state.points.length - 3; i++) {
                 if (distToSegmentSquared(head, state.points[i], state.points[i+1]) < hitRadiusSq) {
                     gameOver();
@@ -296,58 +506,91 @@
                 }
             }
 
-            // Colisión con comida
-            if (Math.hypot(head.x - state.food.x, head.y - state.food.y) < (config.thickness / 2 + config.foodRadius)) {
+            for (let obs of state.obstacles) {
+                if (rectIntersect(head.x, head.y, headR, obs.x, obs.y, obs.w, obs.h)) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            if (Math.hypot(head.x - state.food.x, head.y - state.food.y) < (headR + baseConfig.foodRadius)) {
+                playEatSound();
                 state.score++;
-                state.targetLength += config.growthFactor;
-                hud.innerText = state.score;
-                config.speed += 5; // Aumentar dificultad levemente
-                spawnFood();
+                state.levelScore++;
+                state.targetLength += baseConfig.growthFactor;
+                
+                if (state.mode === 'infinite') {
+                    state.speed += 2;
+                }
+
+                updateHUD();
+                
+                if (state.mode === 'levels' && state.levelScore >= state.targetForNextLevel) {
+                    levelUp();
+                } else {
+                    spawnFood();
+                }
             }
 
             draw(time);
         }
 
         function draw(time) {
-            ctx.clearRect(0, 0, config.width, config.height);
+            ctx.clearRect(0, 0, baseConfig.width, baseConfig.height);
 
-            // Dibujar comida (Rombo dorado pulsante)
+            // Obstacles
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.2)';
+            ctx.strokeStyle = '#E74C3C';
+            ctx.lineWidth = 2;
+            for (let obs of state.obstacles) {
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+                
+                // Hazard pattern inside obstacle
+                ctx.beginPath();
+                for(let i=0; i<obs.w+obs.h; i+=15) {
+                    ctx.moveTo(obs.x + i, obs.y);
+                    ctx.lineTo(obs.x, obs.y + i);
+                }
+                ctx.strokeStyle = 'rgba(231, 76, 60, 0.3)';
+                ctx.stroke();
+            }
+
+            // Food
             ctx.save();
             ctx.translate(state.food.x, state.food.y);
-            let scale = 1 + Math.sin(time / 200) * 0.15;
+            let scale = 1 + Math.sin(time / 150) * 0.2;
             ctx.scale(scale, scale);
-            ctx.rotate(time / 1000);
+            ctx.rotate(time / 800);
             
             ctx.beginPath();
-            ctx.moveTo(0, -14);
-            ctx.lineTo(14, 0);
-            ctx.lineTo(0, 14);
-            ctx.lineTo(-14, 0);
+            ctx.moveTo(0, -12);
+            ctx.lineTo(12, 0);
+            ctx.lineTo(0, 12);
+            ctx.lineTo(-12, 0);
             ctx.closePath();
             
             ctx.fillStyle = '#F2A900';
             ctx.shadowColor = '#F2A900';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 15;
             ctx.fill();
             ctx.restore();
 
-            // Dibujar cuerpo de la serpiente
+            // Snake Body
             if (state.points.length > 1) {
                 ctx.beginPath();
                 ctx.moveTo(state.points[0].x, state.points[0].y);
                 for (let i = 1; i < state.points.length; i++) {
                     ctx.lineTo(state.points[i].x, state.points[i].y);
                 }
-                
                 ctx.strokeStyle = '#45A29E';
-                ctx.lineWidth = config.thickness;
+                ctx.lineWidth = baseConfig.thickness;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 ctx.shadowColor = '#66FCF1';
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 10;
                 ctx.stroke();
 
-                // Delineado central brillante
                 ctx.beginPath();
                 ctx.moveTo(state.points[0].x, state.points[0].y);
                 for (let i = 1; i < state.points.length; i++) {
@@ -359,7 +602,7 @@
                 ctx.stroke();
             }
 
-            // Dibujar cabeza (Forma de flecha/diamante)
+            // Snake Head
             let head = state.points[state.points.length - 1];
             ctx.save();
             ctx.translate(head.x, head.y);
@@ -367,15 +610,15 @@
             ctx.rotate(angle);
             
             ctx.beginPath();
-            ctx.moveTo(12, 0);
-            ctx.lineTo(-8, 10);
-            ctx.lineTo(-4, 0);
-            ctx.lineTo(-8, -10);
+            ctx.moveTo(14, 0);
+            ctx.lineTo(-6, 10);
+            ctx.lineTo(-2, 0);
+            ctx.lineTo(-6, -10);
             ctx.closePath();
             
-            ctx.fillStyle = '#C5C6C7';
-            ctx.shadowColor = '#C5C6C7';
-            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.shadowColor = '#FFFFFF';
+            ctx.shadowBlur = 15;
             ctx.fill();
             ctx.restore();
         }
