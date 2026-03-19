@@ -2,20 +2,29 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Serpent: Advanced</title>
+    <title>Serpent: Sistema Complejo</title>
     <style>
+        :root {
+            --bg-color: #0B0C10;
+            --ui-bg: rgba(31, 40, 51, 0.95);
+            --accent: #66FCF1;
+            --text-main: #C5C6C7;
+            --text-highlight: #F2A900;
+        }
+
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: #0B0C10;
-            color: #C5C6C7;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
             height: 100vh;
             justify-content: center;
+            transition: background-color 0.5s ease;
         }
         #hud-container {
             position: absolute;
@@ -23,76 +32,94 @@
             left: 0;
             width: 100%;
             height: 60px;
-            background-color: #1F2833;
-            border-bottom: 2px solid #45A29E;
+            background-color: var(--ui-bg);
+            border-bottom: 2px solid var(--accent);
             display: none;
             justify-content: space-around;
             align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             z-index: 5;
+            transition: all 0.5s ease;
         }
         .hud-item {
             font-size: 20px;
-            color: #66FCF1;
+            color: var(--accent);
             letter-spacing: 2px;
             text-transform: uppercase;
         }
         .hud-value {
             font-weight: bold;
-            color: #F2A900;
+            color: var(--text-highlight);
         }
         #ui-layer {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(31, 40, 51, 0.95);
-            padding: 40px;
-            border: 2px solid #66FCF1;
+            background-color: var(--ui-bg);
+            padding: 30px;
+            border: 2px solid var(--accent);
             border-radius: 12px;
             text-align: center;
-            box-shadow: 0 0 30px rgba(102, 252, 241, 0.3);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
             z-index: 10;
-            width: 400px;
+            width: 420px;
+            transition: all 0.5s ease;
         }
         h1 {
-            color: #66FCF1;
+            color: var(--accent);
             font-weight: 300;
             letter-spacing: 4px;
             margin-top: 0;
             text-transform: uppercase;
         }
         .menu-section {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #45A29E;
+            margin: 15px 0;
+            padding: 12px;
+            border: 1px solid var(--accent);
             border-radius: 8px;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.3);
+            text-align: left;
         }
         .control-group {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 10px 0;
+            margin: 8px 0;
         }
         label {
-            color: #C5C6C7;
-            font-size: 14px;
+            color: var(--text-main);
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        select, input[type="checkbox"] {
-            background-color: #0B0C10;
-            color: #66FCF1;
-            border: 1px solid #45A29E;
+        select, input[type="range"] {
+            background-color: #000;
+            color: var(--accent);
+            border: 1px solid var(--accent);
             padding: 5px;
             border-radius: 4px;
             outline: none;
+            font-family: inherit;
+        }
+        input[type="range"] {
+            width: 120px;
+            appearance: none;
+            height: 6px;
+            background: var(--text-main);
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
         }
         button {
             background-color: transparent;
-            color: #66FCF1;
-            border: 2px solid #66FCF1;
+            color: var(--accent);
+            border: 2px solid var(--accent);
             padding: 12px 30px;
             font-size: 16px;
             letter-spacing: 2px;
@@ -104,16 +131,29 @@
             transition: all 0.3s ease;
         }
         button:hover {
-            background-color: #66FCF1;
-            color: #0B0C10;
-            box-shadow: 0 0 15px #66FCF1;
+            background-color: var(--accent);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent);
         }
         canvas {
-            background-color: #12141A;
-            border: 1px solid #1F2833;
+            background-color: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 0 40px rgba(0,0,0,0.8);
             border-radius: 4px;
             margin-top: 60px;
+        }
+        #countdown-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            font-weight: bold;
+            color: var(--text-highlight);
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
+            z-index: 8;
+            display: none;
+            pointer-events: none;
         }
         .hidden { display: none !important; }
     </style>
@@ -121,43 +161,51 @@
 <body>
 
     <div id="hud-container">
-        <div class="hud-item" id="hud-mode-display">Modo: <span class="hud-value" id="hud-mode">Infinito</span></div>
+        <div class="hud-item">Modo: <span class="hud-value" id="hud-mode">Infinito</span></div>
         <div class="hud-item" id="hud-level-display">Nivel: <span class="hud-value" id="hud-level">1</span></div>
         <div class="hud-item">Puntuación: <span class="hud-value" id="hud-score">0</span></div>
         <div class="hud-item">Objetivo: <span class="hud-value" id="hud-target">-</span></div>
     </div>
+
+    <div id="countdown-layer">3</div>
 
     <div id="ui-layer">
         <h1>Serpent</h1>
         
         <div class="menu-section">
             <div class="control-group">
-                <label for="game-mode">Modo de Juego</label>
-                <select id="game-mode">
-                    <option value="infinite">Infinito</option>
-                    <option value="levels">Niveles</option>
+                <label for="theme-select">Estilo Visual</label>
+                <select id="theme-select">
+                    <option value="cyberpunk">Neón Distópico</option>
+                    <option value="crimson">Vacío Carmesí</option>
+                    <option value="toxic">Bosque Radiactivo</option>
+                    <option value="monochrome">Terminal Retro</option>
                 </select>
             </div>
-            <div style="font-size: 12px; color: #888; text-align: left; margin-top: 5px;" id="mode-desc">
-                Sobrevive el mayor tiempo posible sin límites.
+            <div class="control-group">
+                <label for="game-mode">Parámetro Operativo</label>
+                <select id="game-mode">
+                    <option value="infinite">Bucle Infinito</option>
+                    <option value="levels">Progresión Táctica</option>
+                </select>
             </div>
         </div>
 
         <div class="menu-section">
             <div class="control-group">
-                <label for="sfx-toggle">Efectos de Sonido</label>
-                <input type="checkbox" id="sfx-toggle" checked>
+                <label for="master-volume">Nivel de Audio</label>
+                <input type="range" id="master-volume" min="0" max="1" step="0.05" value="0.5">
             </div>
             <div class="control-group">
-                <label for="bgm-toggle">Música</label>
-                <input type="checkbox" id="bgm-toggle" checked>
+                <label>Música Dinámica</label>
+                <input type="checkbox" id="bgm-toggle" checked style="width: 20px; height: 20px;">
             </div>
         </div>
 
         <button id="startBtn">Iniciar Secuencia</button>
     </div>
 
-    <canvas id="gameCanvas" width="800" height="700"></canvas>
+    <canvas id="gameCanvas" width="900" height="700"></canvas>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -166,9 +214,10 @@
         const hudContainer = document.getElementById("hud-container");
         const startBtn = document.getElementById("startBtn");
         const modeSelect = document.getElementById("game-mode");
-        const modeDesc = document.getElementById("mode-desc");
-        const sfxToggle = document.getElementById("sfx-toggle");
+        const themeSelect = document.getElementById("theme-select");
+        const volumeSlider = document.getElementById("master-volume");
         const bgmToggle = document.getElementById("bgm-toggle");
+        const countdownLayer = document.getElementById("countdown-layer");
 
         const hudScore = document.getElementById("hud-score");
         const hudLevel = document.getElementById("hud-level");
@@ -176,65 +225,110 @@
         const hudMode = document.getElementById("hud-mode");
         const hudLevelDisplay = document.getElementById("hud-level-display");
 
+        // Theme Definitions
+        const themes = {
+            'cyberpunk': {
+                css: { bg: '#0B0C10', ui: 'rgba(31, 40, 51, 0.95)', acc: '#66FCF1', txt: '#C5C6C7', hl: '#F2A900' },
+                render: { snake: '#45A29E', snakeCore: '#C5C6C7', head: '#FFFFFF', food: '#F2A900', obs: '#E74C3C', obsFill: 'rgba(231, 76, 60, 0.2)' }
+            },
+            'crimson': {
+                css: { bg: '#140000', ui: 'rgba(40, 10, 10, 0.95)', acc: '#FF1E27', txt: '#CCCCCC', hl: '#FFB300' },
+                render: { snake: '#A30015', snakeCore: '#FF7788', head: '#FFFFFF', food: '#FFB300', obs: '#555555', obsFill: 'rgba(85, 85, 85, 0.4)' }
+            },
+            'toxic': {
+                css: { bg: '#051105', ui: 'rgba(15, 30, 15, 0.95)', acc: '#39FF14', txt: '#A0A0A0', hl: '#9400D3' },
+                render: { snake: '#228B22', snakeCore: '#A0FFA0', head: '#FFFFFF', food: '#9400D3', obs: '#FF4500', obsFill: 'rgba(255, 69, 0, 0.2)' }
+            },
+            'monochrome': {
+                css: { bg: '#000000', ui: 'rgba(20, 20, 20, 0.95)', acc: '#FFFFFF', txt: '#888888', hl: '#FFFFFF' },
+                render: { snake: '#888888', snakeCore: '#CCCCCC', head: '#FFFFFF', food: '#FFFFFF', obs: '#444444', obsFill: 'rgba(68, 68, 68, 0.2)' }
+            }
+        };
+
+        let currentTheme = themes['cyberpunk'];
+
+        function applyTheme(themeKey) {
+            currentTheme = themes[themeKey];
+            document.documentElement.style.setProperty('--bg-color', currentTheme.css.bg);
+            document.documentElement.style.setProperty('--ui-bg', currentTheme.css.ui);
+            document.documentElement.style.setProperty('--accent', currentTheme.css.acc);
+            document.documentElement.style.setProperty('--text-main', currentTheme.css.txt);
+            document.documentElement.style.setProperty('--text-highlight', currentTheme.css.hl);
+        }
+
+        themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
+
+        // State Machine & Core Vars
         let isPlaying = false;
         let lastTime = 0;
         let reqAnimFrame;
+        let masterVol = parseFloat(volumeSlider.value);
+        
+        volumeSlider.addEventListener('input', (e) => { masterVol = parseFloat(e.target.value); });
 
-        // Audio System (Web Audio API)
+        // Web Audio API
         let audioCtx;
-        let musicOscillator;
-        let musicGain;
         let musicInterval;
-        let noteIndex = 0;
-        const melody = [220, 246, 261, 293, 329, 293, 261, 246]; // A minor scale snippet
+        const pentaScale = [220, 261.63, 293.66, 329.63, 392.00, 440, 523.25, 587.33]; // A minor pentatonic expanded
+        let currentNoteIndex = 3;
 
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        function playTone(freq, type, duration, vol) {
-            if (!sfxToggle.checked || !audioCtx) return;
+        function playTone(freq, type, duration, baseVol) {
+            if (!audioCtx || masterVol === 0) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            
+            let finalVol = baseVol * masterVol;
+            gain.gain.setValueAtTime(finalVol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
             osc.stop(audioCtx.currentTime + duration);
         }
 
-        function playEatSound() { playTone(880, 'sine', 0.1, 0.1); playTone(1108, 'sine', 0.15, 0.1); }
-        function playCrashSound() { playTone(150, 'sawtooth', 0.5, 0.2); playTone(100, 'square', 0.6, 0.2); }
+        function playEatSound() { playTone(880, 'sine', 0.1, 0.2); playTone(1108, 'sine', 0.15, 0.2); }
+        function playCrashSound() { playTone(150, 'sawtooth', 0.5, 0.4); playTone(100, 'square', 0.6, 0.4); }
         function playLevelUpSound() { 
-            playTone(440, 'sine', 0.1, 0.1); 
-            setTimeout(() => playTone(554, 'sine', 0.1, 0.1), 100);
-            setTimeout(() => playTone(659, 'sine', 0.2, 0.1), 200);
+            playTone(440, 'sine', 0.1, 0.3); 
+            setTimeout(() => playTone(554, 'sine', 0.1, 0.3), 100);
+            setTimeout(() => playTone(659, 'sine', 0.3, 0.3), 200);
         }
+        function playTickSound() { playTone(1000, 'sine', 0.05, 0.1); }
 
         function startMusic() {
             if (!bgmToggle.checked || !audioCtx) return;
             stopMusic();
             musicInterval = setInterval(() => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(melody[noteIndex] / 2, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.2);
-                noteIndex = (noteIndex + 1) % melody.length;
-            }, 250);
+                if(masterVol > 0 && isPlaying && !state.transitioning) {
+                    // Random walk logic for less repetitive music
+                    let step = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+                    currentNoteIndex += step;
+                    if (currentNoteIndex < 0) currentNoteIndex = 0;
+                    if (currentNoteIndex >= pentaScale.length) currentNoteIndex = pentaScale.length - 1;
+                    
+                    let freq = pentaScale[currentNoteIndex] / 2; // Lower octave
+                    
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08 * masterVol, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }
+            }, 300); // Slightly slower rhythm
         }
 
         function stopMusic() {
@@ -245,103 +339,84 @@
         }
 
         bgmToggle.addEventListener('change', () => {
-            if (isPlaying) {
-                if (bgmToggle.checked) startMusic();
-                else stopMusic();
-            }
+            if (isPlaying) { if (bgmToggle.checked) startMusic(); else stopMusic(); }
         });
 
-        // Game Configuration
-        const baseConfig = {
-            width: 800,
-            height: 700,
-            speed: 300,
-            baseLength: 100,
-            growthFactor: 50,
-            thickness: 14,
-            foodRadius: 10
-        };
+        // Config & State
+        const baseConfig = { width: 900, height: 700, speed: 320, baseLength: 120, growthFactor: 50, thickness: 14, foodRadius: 10 };
 
         let state = {
-            mode: 'infinite',
-            level: 1,
-            points: [],
-            vx: 1, vy: 0,
-            turnQueue: [],
-            targetLength: baseConfig.baseLength,
-            score: 0,
-            levelScore: 0,
-            food: {x: 0, y: 0},
-            speed: baseConfig.speed,
-            obstacles: [],
-            targetForNextLevel: 0
+            mode: 'infinite', level: 1, points: [], vx: 1, vy: 0, turnQueue: [],
+            targetLength: baseConfig.baseLength, score: 0, levelScore: 0,
+            food: {x: 0, y: 0}, speed: baseConfig.speed, obstacles: [],
+            targetForNextLevel: 0, transitioning: false, transitionEndTime: 0, lastTick: 0
         };
-
-        modeSelect.addEventListener("change", (e) => {
-            if (e.target.value === 'infinite') {
-                modeDesc.innerText = "Sobrevive el mayor tiempo posible sin límites.";
-            } else {
-                modeDesc.innerText = "Supera niveles alcanzando el objetivo. Cuidado con los obstáculos.";
-            }
-        });
 
         startBtn.addEventListener("click", startGame);
         document.addEventListener("keydown", handleInput);
 
         function handleInput(e) {
-            if (!isPlaying) return;
+            if (!isPlaying || state.transitioning) return;
             const keys = { 37: {x:-1,y:0}, 38: {x:0,y:-1}, 39: {x:1,y:0}, 40: {x:0,y:1} };
             if (keys[e.keyCode]) {
                 e.preventDefault();
                 if (state.turnQueue.length < 2) {
                     let lastDir = state.turnQueue.length > 0 ? state.turnQueue[state.turnQueue.length - 1] : {x: state.vx, y: state.vy};
                     let newDir = keys[e.keyCode];
-                    if ((newDir.x * lastDir.x + newDir.y * lastDir.y) === 0) {
-                        state.turnQueue.push(newDir);
-                    }
+                    if ((newDir.x * lastDir.x + newDir.y * lastDir.y) === 0) state.turnQueue.push(newDir);
                 }
             }
+        }
+
+        function spawnDynamicObstacle(edge) {
+            let obs = { isDynamic: true, w: 20 + Math.random() * 30, h: 20 + Math.random() * 30, x: 0, y: 0, dx: 0, dy: 0 };
+            let speed = 100 + Math.random() * 150 + (state.level * 10);
+            
+            if (edge === 0) { // Top
+                obs.x = Math.random() * baseConfig.width; obs.y = -obs.h; obs.dy = speed;
+            } else if (edge === 1) { // Right
+                obs.x = baseConfig.width; obs.y = Math.random() * baseConfig.height; obs.dx = -speed;
+            } else if (edge === 2) { // Bottom
+                obs.x = Math.random() * baseConfig.width; obs.y = baseConfig.height; obs.dy = -speed;
+            } else { // Left
+                obs.x = -obs.w; obs.y = Math.random() * baseConfig.height; obs.dx = speed;
+            }
+            return obs;
         }
 
         function generateObstacles(level) {
             state.obstacles = [];
-            const numObstacles = level * 2;
-            for (let i = 0; i < numObstacles; i++) {
-                let w = 40 + Math.random() * 60;
-                let h = 40 + Math.random() * 60;
-                let valid = false;
-                let attempts = 0;
-                let obs;
+            let staticCount = Math.min(level, 8);
+            
+            // Static Obstacles
+            for (let i = 0; i < staticCount; i++) {
+                let w = 40 + Math.random() * 60; let h = 40 + Math.random() * 60;
+                let valid = false; let attempts = 0; let obs;
                 while (!valid && attempts < 100) {
-                    obs = {
-                        x: 50 + Math.random() * (baseConfig.width - 100 - w),
-                        y: 50 + Math.random() * (baseConfig.height - 100 - h),
-                        w: w, h: h
-                    };
-                    // Prevent spawning near start zone (center left)
-                    let distToStart = Math.hypot(obs.x - 200, obs.y - 350);
-                    if (distToStart > 150) valid = true;
+                    obs = { x: 50 + Math.random() * (baseConfig.width - 100 - w), y: 50 + Math.random() * (baseConfig.height - 100 - h), w: w, h: h, isDynamic: false };
+                    if (Math.hypot(obs.x - 200, obs.y - 350) > 150) valid = true;
                     attempts++;
                 }
                 if (valid) state.obstacles.push(obs);
             }
+
+            // Dynamic Obstacles (Level 4+)
+            if (level >= 4) {
+                let dynamicCount = Math.min(level - 3, 5);
+                for (let i = 0; i < dynamicCount; i++) {
+                    state.obstacles.push(spawnDynamicObstacle(i % 4));
+                }
+            }
         }
 
         function spawnFood() {
-            let margin = 40;
-            let valid = false;
+            let margin = 40; let valid = false;
             while (!valid) {
-                state.food = {
-                    x: margin + Math.random() * (baseConfig.width - margin * 2),
-                    y: margin + Math.random() * (baseConfig.height - margin * 2)
-                };
+                state.food = { x: margin + Math.random() * (baseConfig.width - margin * 2), y: margin + Math.random() * (baseConfig.height - margin * 2) };
                 valid = true;
-                // Check obstacle collision for food
                 for (let obs of state.obstacles) {
-                    if (state.food.x > obs.x - 20 && state.food.x < obs.x + obs.w + 20 &&
-                        state.food.y > obs.y - 20 && state.food.y < obs.y + obs.h + 20) {
-                        valid = false;
-                        break;
+                    if (!obs.isDynamic && state.food.x > obs.x - 20 && state.food.x < obs.x + obs.w + 20 && state.food.y > obs.y - 20 && state.food.y < obs.y + obs.h + 20) {
+                        valid = false; break;
                     }
                 }
             }
@@ -350,11 +425,8 @@
         function startGame() {
             initAudio();
             state.mode = modeSelect.value;
-            state.level = 1;
-            state.score = 0;
-            state.levelScore = 0;
-            state.speed = baseConfig.speed;
-            state.targetLength = baseConfig.baseLength;
+            state.level = 1; state.score = 0; state.levelScore = 0;
+            state.speed = baseConfig.speed; state.targetLength = baseConfig.baseLength;
             state.targetForNextLevel = state.mode === 'levels' ? 5 : Infinity;
             
             resetPositions();
@@ -369,37 +441,37 @@
                 hudLevelDisplay.style.display = 'block';
                 hudTarget.parentElement.style.display = 'block';
             }
-            hudMode.innerText = state.mode === 'infinite' ? 'Infinito' : 'Niveles';
+            hudMode.innerText = state.mode === 'infinite' ? 'Infinito' : 'Progresión';
 
             isPlaying = true;
-            lastTime = performance.now();
+            triggerTransition(true); // Start with countdown
             startMusic();
             
             if (reqAnimFrame) cancelAnimationFrame(reqAnimFrame);
             reqAnimFrame = requestAnimationFrame(gameLoop);
         }
 
+        function triggerTransition(isInitial = false) {
+            state.transitioning = true;
+            state.transitionEndTime = performance.now() + 3000;
+            state.lastTick = 4;
+            countdownLayer.style.display = "block";
+            if(!isInitial) playLevelUpSound();
+        }
+
         function resetPositions() {
-            state.points = [
-                {x: 200 - baseConfig.baseLength, y: baseConfig.height / 2},
-                {x: 200, y: baseConfig.height / 2}
-            ];
-            state.vx = 1;
-            state.vy = 0;
-            state.turnQueue = [];
-            if (state.mode === 'levels') generateObstacles(state.level);
-            else state.obstacles = [];
+            state.points = [ {x: 200 - baseConfig.baseLength, y: baseConfig.height / 2}, {x: 200, y: baseConfig.height / 2} ];
+            state.vx = 1; state.vy = 0; state.turnQueue = [];
+            if (state.mode === 'levels') generateObstacles(state.level); else state.obstacles = [];
             spawnFood();
         }
 
         function levelUp() {
-            playLevelUpSound();
-            state.level++;
-            state.levelScore = 0;
-            state.speed += 40;
+            state.level++; state.levelScore = 0; state.speed += 30;
             state.targetForNextLevel = 5 + (state.level * 2);
             resetPositions();
             updateHUD();
+            triggerTransition(false);
         }
 
         function gameOver() {
@@ -409,32 +481,23 @@
             cancelAnimationFrame(reqAnimFrame);
             uiLayer.classList.remove("hidden");
             hudContainer.style.display = "none";
+            countdownLayer.style.display = "none";
             startBtn.innerText = "Reiniciar Secuencia";
         }
 
         function updateHUD() {
-            hudScore.innerText = state.score;
-            hudLevel.innerText = state.level;
+            hudScore.innerText = state.score; hudLevel.innerText = state.level;
             hudTarget.innerText = state.mode === 'levels' ? `${state.levelScore} / ${state.targetForNextLevel}` : '∞';
         }
 
         function advanceTail(amount) {
             while (amount > 0 && state.points.length > 1) {
-                let tail = state.points[0];
-                let next = state.points[1];
-                let dx = next.x - tail.x;
-                let dy = next.y - tail.y;
+                let tail = state.points[0]; let next = state.points[1];
+                let dx = next.x - tail.x; let dy = next.y - tail.y;
                 let segLen = Math.hypot(dx, dy);
 
-                if (amount >= segLen) {
-                    amount -= segLen;
-                    state.points.shift();
-                } else {
-                    let ratio = amount / segLen;
-                    tail.x += dx * ratio;
-                    tail.y += dy * ratio;
-                    amount = 0;
-                }
+                if (amount >= segLen) { amount -= segLen; state.points.shift(); } 
+                else { let ratio = amount / segLen; tail.x += dx * ratio; tail.y += dy * ratio; amount = 0; }
             }
         }
 
@@ -446,14 +509,11 @@
             t = Math.max(0, Math.min(1, t));
             return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
         }
-
         function rectIntersect(cx, cy, r, rx, ry, rw, rh) {
-            let testX = cx;
-            let testY = cy;
+            let testX = cx; let testY = cy;
             if (cx < rx) testX = rx; else if (cx > rx + rw) testX = rx + rw;
             if (cy < ry) testY = ry; else if (cy > ry + rh) testY = ry + rh;
-            let distX = cx - testX;
-            let distY = cy - testY;
+            let distX = cx - testX; let distY = cy - testY;
             return (distX*distX + distY*distY) <= (r*r);
         }
 
@@ -465,16 +525,32 @@
             if (dt > 0.1) dt = 0.1;
             lastTime = time;
 
+            if (state.transitioning) {
+                let remaining = Math.ceil((state.transitionEndTime - time) / 1000);
+                if (remaining < state.lastTick && remaining > 0) {
+                    state.lastTick = remaining;
+                    countdownLayer.innerText = remaining;
+                    playTickSound();
+                }
+                
+                if (time >= state.transitionEndTime) {
+                    state.transitioning = false;
+                    countdownLayer.style.display = "none";
+                    playTone(880, 'square', 0.2, 0.3); // "Go" sound
+                } else {
+                    draw(time);
+                    return;
+                }
+            }
+
             let head = state.points[state.points.length - 1];
 
             if (state.turnQueue.length > 0) {
                 let prevVertex = state.points[state.points.length - 2];
-                let distFromTurn = Math.hypot(head.x - prevVertex.x, head.y - prevVertex.y);
-                if (distFromTurn > baseConfig.thickness + 2) {
+                if (Math.hypot(head.x - prevVertex.x, head.y - prevVertex.y) > baseConfig.thickness + 2) {
                     let nextDir = state.turnQueue.shift();
                     state.points.push({x: head.x, y: head.y});
-                    state.vx = nextDir.x;
-                    state.vy = nextDir.y;
+                    state.vx = nextDir.x; state.vy = nextDir.y;
                     head = state.points[state.points.length - 1];
                 }
             }
@@ -482,54 +558,47 @@
             head.x += state.vx * state.speed * dt;
             head.y += state.vy * state.speed * dt;
 
+            // Process dynamic obstacles
+            for (let obs of state.obstacles) {
+                if (obs.isDynamic) {
+                    obs.x += obs.dx * dt;
+                    obs.y += obs.dy * dt;
+                    
+                    if (obs.x > baseConfig.width + 50 || obs.x < -obs.w - 50 || 
+                        obs.y > baseConfig.height + 50 || obs.y < -obs.h - 50) {
+                        Object.assign(obs, spawnDynamicObstacle(Math.floor(Math.random() * 4)));
+                    }
+                }
+            }
+
             let currentLen = 0;
             for (let i = 0; i < state.points.length - 1; i++) {
                 currentLen += Math.hypot(state.points[i+1].x - state.points[i].x, state.points[i+1].y - state.points[i].y);
             }
 
-            if (currentLen > state.targetLength) {
-                advanceTail(currentLen - state.targetLength);
-            }
+            if (currentLen > state.targetLength) advanceTail(currentLen - state.targetLength);
 
             let headR = baseConfig.thickness / 2;
 
-            if (head.x < headR || head.x > baseConfig.width - headR || head.y < headR || head.y > baseConfig.height - headR) {
-                gameOver();
-                return;
-            }
+            if (head.x < headR || head.x > baseConfig.width - headR || head.y < headR || head.y > baseConfig.height - headR) { gameOver(); return; }
 
             let hitRadiusSq = (headR - 2) ** 2;
             for (let i = 0; i < state.points.length - 3; i++) {
-                if (distToSegmentSquared(head, state.points[i], state.points[i+1]) < hitRadiusSq) {
-                    gameOver();
-                    return;
-                }
+                if (distToSegmentSquared(head, state.points[i], state.points[i+1]) < hitRadiusSq) { gameOver(); return; }
             }
 
             for (let obs of state.obstacles) {
-                if (rectIntersect(head.x, head.y, headR, obs.x, obs.y, obs.w, obs.h)) {
-                    gameOver();
-                    return;
-                }
+                if (rectIntersect(head.x, head.y, headR, obs.x, obs.y, obs.w, obs.h)) { gameOver(); return; }
             }
 
             if (Math.hypot(head.x - state.food.x, head.y - state.food.y) < (headR + baseConfig.foodRadius)) {
                 playEatSound();
-                state.score++;
-                state.levelScore++;
-                state.targetLength += baseConfig.growthFactor;
-                
-                if (state.mode === 'infinite') {
-                    state.speed += 2;
-                }
-
+                state.score++; state.levelScore++; state.targetLength += baseConfig.growthFactor;
+                if (state.mode === 'infinite') state.speed += 2;
                 updateHUD();
                 
-                if (state.mode === 'levels' && state.levelScore >= state.targetForNextLevel) {
-                    levelUp();
-                } else {
-                    spawnFood();
-                }
+                if (state.mode === 'levels' && state.levelScore >= state.targetForNextLevel) levelUp();
+                else spawnFood();
             }
 
             draw(time);
@@ -537,22 +606,22 @@
 
         function draw(time) {
             ctx.clearRect(0, 0, baseConfig.width, baseConfig.height);
+            let rd = currentTheme.render;
 
             // Obstacles
-            ctx.fillStyle = 'rgba(231, 76, 60, 0.2)';
-            ctx.strokeStyle = '#E74C3C';
-            ctx.lineWidth = 2;
             for (let obs of state.obstacles) {
+                ctx.fillStyle = rd.obsFill;
+                ctx.strokeStyle = rd.obs;
+                ctx.lineWidth = 2;
                 ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
                 ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
                 
-                // Hazard pattern inside obstacle
                 ctx.beginPath();
                 for(let i=0; i<obs.w+obs.h; i+=15) {
                     ctx.moveTo(obs.x + i, obs.y);
                     ctx.lineTo(obs.x, obs.y + i);
                 }
-                ctx.strokeStyle = 'rgba(231, 76, 60, 0.3)';
+                ctx.strokeStyle = rd.obsFill;
                 ctx.stroke();
             }
 
@@ -562,66 +631,58 @@
             let scale = 1 + Math.sin(time / 150) * 0.2;
             ctx.scale(scale, scale);
             ctx.rotate(time / 800);
-            
             ctx.beginPath();
-            ctx.moveTo(0, -12);
-            ctx.lineTo(12, 0);
-            ctx.lineTo(0, 12);
-            ctx.lineTo(-12, 0);
+            ctx.moveTo(0, -12); ctx.lineTo(12, 0); ctx.lineTo(0, 12); ctx.lineTo(-12, 0);
             ctx.closePath();
-            
-            ctx.fillStyle = '#F2A900';
-            ctx.shadowColor = '#F2A900';
+            ctx.fillStyle = rd.food;
+            ctx.shadowColor = rd.food;
             ctx.shadowBlur = 15;
             ctx.fill();
             ctx.restore();
 
-            // Snake Body
+            // Snake
             if (state.points.length > 1) {
                 ctx.beginPath();
                 ctx.moveTo(state.points[0].x, state.points[0].y);
-                for (let i = 1; i < state.points.length; i++) {
-                    ctx.lineTo(state.points[i].x, state.points[i].y);
-                }
-                ctx.strokeStyle = '#45A29E';
+                for (let i = 1; i < state.points.length; i++) ctx.lineTo(state.points[i].x, state.points[i].y);
+                ctx.strokeStyle = rd.snake;
                 ctx.lineWidth = baseConfig.thickness;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.shadowColor = '#66FCF1';
+                ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.shadowColor = rd.snake;
                 ctx.shadowBlur = 10;
                 ctx.stroke();
 
                 ctx.beginPath();
                 ctx.moveTo(state.points[0].x, state.points[0].y);
-                for (let i = 1; i < state.points.length; i++) {
-                    ctx.lineTo(state.points[i].x, state.points[i].y);
-                }
-                ctx.strokeStyle = '#C5C6C7';
+                for (let i = 1; i < state.points.length; i++) ctx.lineTo(state.points[i].x, state.points[i].y);
+                ctx.strokeStyle = rd.snakeCore;
                 ctx.lineWidth = 4;
                 ctx.shadowBlur = 0;
                 ctx.stroke();
             }
 
-            // Snake Head
             let head = state.points[state.points.length - 1];
             ctx.save();
             ctx.translate(head.x, head.y);
-            let angle = Math.atan2(state.vy, state.vx);
-            ctx.rotate(angle);
-            
+            ctx.rotate(Math.atan2(state.vy, state.vx));
             ctx.beginPath();
-            ctx.moveTo(14, 0);
-            ctx.lineTo(-6, 10);
-            ctx.lineTo(-2, 0);
-            ctx.lineTo(-6, -10);
+            ctx.moveTo(14, 0); ctx.lineTo(-6, 10); ctx.lineTo(-2, 0); ctx.lineTo(-6, -10);
             ctx.closePath();
-            
-            ctx.fillStyle = '#FFFFFF';
-            ctx.shadowColor = '#FFFFFF';
+            ctx.fillStyle = rd.head;
+            ctx.shadowColor = rd.head;
             ctx.shadowBlur = 15;
             ctx.fill();
             ctx.restore();
+            
+            // Dim if transitioning
+            if(state.transitioning) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0,0, baseConfig.width, baseConfig.height);
+            }
         }
+        
+        // Initial Theme Apply
+        applyTheme('cyberpunk');
     </script>
 </body>
 </html>
