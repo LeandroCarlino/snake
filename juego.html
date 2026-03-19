@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Snake Fluido Elegante</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #0B0C10;
+            color: #C5C6C7;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding-top: 30px;
+            overflow: hidden;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(31, 40, 51, 0.95);
+            padding: 40px;
+            border: 2px solid #66FCF1;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(102, 252, 241, 0.3);
+            z-index: 10;
+            width: 350px;
+        }
+        h1 {
+            color: #66FCF1;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+        .score-display {
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #45A29E;
+        }
+        .score-display span {
+            color: #66FCF1;
+            font-weight: bold;
+        }
+        canvas {
+            background-color: #12141A;
+            border: 1px solid #1F2833;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border-radius: 4px;
+            max-width: 95vw;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+        button {
+            background-color: transparent;
+            color: #66FCF1;
+            border: 2px solid #66FCF1;
+            padding: 12px 30px;
+            font-size: 16px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #66FCF1;
+            color: #0B0C10;
+            box-shadow: 0 0 15px #66FCF1;
+        }
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #66FCF1;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+            display: none;
+            z-index: 5;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="hud">0</div>
+
+    <div id="ui-layer">
+        <h1>Serpent</h1>
+        <div class="score-display">
+            Récord: <span id="highScoreDisplay">0</span><br>
+            Puntuación: <span id="lastScoreDisplay">0</span>
+        </div>
+        <p style="font-size: 0.8em; color: #888;">Controles: Flechas direccionales</p>
+        <button id="startBtn">Iniciar</button>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="800"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const uiLayer = document.getElementById("ui-layer");
+        const hud = document.getElementById("hud");
+        const startBtn = document.getElementById("startBtn");
+        const highScoreDisplay = document.getElementById("highScoreDisplay");
+        const lastScoreDisplay = document.getElementById("lastScoreDisplay");
+
+        let isPlaying = false;
+        let lastTime = 0;
+        let reqAnimFrame;
+
+        // Configuración
+        const config = {
+            width: 800,
+            height: 800,
+            speed: 350, // Píxeles por segundo
+            baseLength: 120,
+            growthFactor: 60,
+            thickness: 16,
+            foodRadius: 10
+        };
+
+        let state = {
+            points: [],
+            vx: 1,
+            vy: 0,
+            turnQueue: [],
+            targetLength: config.baseLength,
+            score: 0,
+            food: {x: 0, y: 0}
+        };
+
+        let highScore = localStorage.getItem("serpentHighScore") || 0;
+        highScoreDisplay.innerText = highScore;
+
+        startBtn.addEventListener("click", startGame);
+        document.addEventListener("keydown", handleInput);
+
+        function handleInput(e) {
+            if (!isPlaying) return;
+            const keys = { 37: {x:-1,y:0}, 38: {x:0,y:-1}, 39: {x:1,y:0}, 40: {x:0,y:1} };
+            if (keys[e.keyCode]) {
+                e.preventDefault();
+                
+                // Evitar encolar demasiados giros
+                if (state.turnQueue.length < 2) {
+                    let lastDir = state.turnQueue.length > 0 ? 
+                        state.turnQueue[state.turnQueue.length - 1] : 
+                        {x: state.vx, y: state.vy};
+                    
+                    let newDir = keys[e.keyCode];
+                    
+                    // Solo permitir giros de 90 grados
+                    if ((newDir.x * lastDir.x + newDir.y * lastDir.y) === 0) {
+                        state.turnQueue.push(newDir);
+                    }
+                }
+            }
+        }
+
+        function spawnFood() {
+            let margin = 40;
+            state.food = {
+                x: margin + Math.random() * (config.width - margin * 2),
+                y: margin + Math.random() * (config.height - margin * 2)
+            };
+        }
+
+        function startGame() {
+            state.points = [
+                {x: 400 - config.baseLength, y: 400},
+                {x: 400, y: 400}
+            ];
+            state.vx = 1;
+            state.vy = 0;
+            state.turnQueue = [];
+            state.targetLength = config.baseLength;
+            state.score = 0;
+            hud.innerText = "0";
+
+            spawnFood();
+            
+            uiLayer.classList.add("hidden");
+            hud.style.display = "block";
+            isPlaying = true;
+            lastTime = performance.now();
+            
+            if (reqAnimFrame) cancelAnimationFrame(reqAnimFrame);
+            reqAnimFrame = requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            cancelAnimationFrame(reqAnimFrame);
+            uiLayer.classList.remove("hidden");
+            hud.style.display = "none";
+            
+            lastScoreDisplay.innerText = state.score;
+            if (state.score > highScore) {
+                highScore = state.score;
+                localStorage.setItem("serpentHighScore", highScore);
+                highScoreDisplay.innerText = highScore;
+            }
+        }
+
+        function advanceTail(amount) {
+            while (amount > 0 && state.points.length > 1) {
+                let tail = state.points[0];
+                let next = state.points[1];
+                let dx = next.x - tail.x;
+                let dy = next.y - tail.y;
+                let segLen = Math.hypot(dx, dy);
+
+                if (amount >= segLen) {
+                    amount -= segLen;
+                    state.points.shift();
+                } else {
+                    let ratio = amount / segLen;
+                    tail.x += dx * ratio;
+                    tail.y += dy * ratio;
+                    amount = 0;
+                }
+            }
+        }
+
+        function dist2(v, w) { return (v.x - w.x)*(v.x - w.x) + (v.y - w.y)*(v.y - w.y); }
+        
+        function distToSegmentSquared(p, v, w) {
+            let l2 = dist2(v, w);
+            if (l2 == 0) return dist2(p, v);
+            let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+        }
+
+        function gameLoop(time) {
+            if (!isPlaying) return;
+            reqAnimFrame = requestAnimationFrame(gameLoop);
+
+            let dt = (time - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = time;
+
+            let head = state.points[state.points.length - 1];
+
+            // Procesar giros pendientes
+            if (state.turnQueue.length > 0) {
+                let prevVertex = state.points[state.points.length - 2];
+                let distFromTurn = Math.hypot(head.x - prevVertex.x, head.y - prevVertex.y);
+                
+                // Asegurar distancia mínima antes del próximo vértice para evitar colapso
+                if (distFromTurn > config.thickness + 2) {
+                    let nextDir = state.turnQueue.shift();
+                    state.points.push({x: head.x, y: head.y});
+                    state.vx = nextDir.x;
+                    state.vy = nextDir.y;
+                    head = state.points[state.points.length - 1]; // Actualizar referencia a nueva cabeza
+                }
+            }
+
+            // Mover cabeza
+            head.x += state.vx * config.speed * dt;
+            head.y += state.vy * config.speed * dt;
+
+            // Calcular longitud actual
+            let currentLen = 0;
+            for (let i = 0; i < state.points.length - 1; i++) {
+                currentLen += Math.hypot(state.points[i+1].x - state.points[i].x, state.points[i+1].y - state.points[i].y);
+            }
+
+            // Mover cola
+            if (currentLen > state.targetLength) {
+                advanceTail(currentLen - state.targetLength);
+            }
+
+            // Colisiones de pared
+            if (head.x < 0 || head.x > config.width || head.y < 0 || head.y > config.height) {
+                gameOver();
+                return;
+            }
+
+            // Colisiones con el cuerpo
+            let hitRadiusSq = (config.thickness / 2 - 1) ** 2;
+            for (let i = 0; i < state.points.length - 3; i++) {
+                if (distToSegmentSquared(head, state.points[i], state.points[i+1]) < hitRadiusSq) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // Colisión con comida
+            if (Math.hypot(head.x - state.food.x, head.y - state.food.y) < (config.thickness / 2 + config.foodRadius)) {
+                state.score++;
+                state.targetLength += config.growthFactor;
+                hud.innerText = state.score;
+                config.speed += 5; // Aumentar dificultad levemente
+                spawnFood();
+            }
+
+            draw(time);
+        }
+
+        function draw(time) {
+            ctx.clearRect(0, 0, config.width, config.height);
+
+            // Dibujar comida (Rombo dorado pulsante)
+            ctx.save();
+            ctx.translate(state.food.x, state.food.y);
+            let scale = 1 + Math.sin(time / 200) * 0.15;
+            ctx.scale(scale, scale);
+            ctx.rotate(time / 1000);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -14);
+            ctx.lineTo(14, 0);
+            ctx.lineTo(0, 14);
+            ctx.lineTo(-14, 0);
+            ctx.closePath();
+            
+            ctx.fillStyle = '#F2A900';
+            ctx.shadowColor = '#F2A900';
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            ctx.restore();
+
+            // Dibujar cuerpo de la serpiente
+            if (state.points.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(state.points[0].x, state.points[0].y);
+                for (let i = 1; i < state.points.length; i++) {
+                    ctx.lineTo(state.points[i].x, state.points[i].y);
+                }
+                
+                ctx.strokeStyle = '#45A29E';
+                ctx.lineWidth = config.thickness;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = '#66FCF1';
+                ctx.shadowBlur = 15;
+                ctx.stroke();
+
+                // Delineado central brillante
+                ctx.beginPath();
+                ctx.moveTo(state.points[0].x, state.points[0].y);
+                for (let i = 1; i < state.points.length; i++) {
+                    ctx.lineTo(state.points[i].x, state.points[i].y);
+                }
+                ctx.strokeStyle = '#C5C6C7';
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 0;
+                ctx.stroke();
+            }
+
+            // Dibujar cabeza (Forma de flecha/diamante)
+            let head = state.points[state.points.length - 1];
+            ctx.save();
+            ctx.translate(head.x, head.y);
+            let angle = Math.atan2(state.vy, state.vx);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(12, 0);
+            ctx.lineTo(-8, 10);
+            ctx.lineTo(-4, 0);
+            ctx.lineTo(-8, -10);
+            ctx.closePath();
+            
+            ctx.fillStyle = '#C5C6C7';
+            ctx.shadowColor = '#C5C6C7';
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            ctx.restore();
+        }
+    </script>
+</body>
+</html>
