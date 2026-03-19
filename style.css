@@ -64,6 +64,11 @@ body {
     max-width: 450px;
     max-height: 90vh;
     overflow-y: auto;
+    transition: max-width 0.3s ease;
+}
+
+#ui-layer.wide-mode {
+    max-width: 800px;
 }
 
 h1 {
@@ -94,13 +99,24 @@ h1 {
     font-size: 24px;
 }
 
+.menu-layout {
+    display: flex;
+    gap: 20px;
+    text-align: left;
+}
+
+.menu-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .menu-section {
     margin: 10px 0;
     padding: 10px;
     border: 1px solid var(--accent);
     border-radius: 8px;
     background: rgba(0,0,0,0.3);
-    text-align: left;
 }
 
 .section-title {
@@ -153,6 +169,10 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="checkbox"] {
     width: 18px;
     height: 18px;
+}
+
+.btn-group {
+    margin-top: 15px;
 }
 
 button {
@@ -230,3 +250,13 @@ canvas {
 
 .hidden { display: none !important; }
 .disabled { opacity: 0.5; pointer-events: none; }
+
+@media (max-width: 768px) {
+    .menu-layout {
+        flex-direction: column;
+        gap: 0;
+    }
+    #ui-layer.wide-mode {
+        max-width: 450px;
+    }
+}

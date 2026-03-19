@@ -9,7 +9,7 @@
 <body>
 
     <div id="hud-container">
-        <div class="hud-item"><span data-i18n="mode">Modo</span>: <span class="hud-value" id="hud-mode">Infinito</span></div>
+        <div class="hud-item"><span data-i18n="mode">Modo</span>: <span class="hud-value" id="hud-mode">Niveles</span></div>
         <div class="hud-item" id="hud-level-display"><span data-i18n="level">Nivel</span>: <span class="hud-value" id="hud-level">1</span></div>
         <div class="hud-item"><span data-i18n="score">Puntuación</span>: <span class="hud-value" id="hud-score">0</span></div>
         <div class="hud-item"><span data-i18n="target">Objetivo</span>: <span class="hud-value" id="hud-target">-</span></div>
@@ -17,7 +17,7 @@
 
     <div id="countdown-layer">3</div>
 
-    <div id="ui-layer">
+    <div id="ui-layer" class="wide-mode">
         <h1 id="ui-title">Snake</h1>
         
         <div id="end-status" class="hidden">
@@ -25,84 +25,92 @@
             <div><span data-i18n="currentScoreLabel">Puntuación Actual</span>: <span id="final-score-val" class="score-highlight">0</span></div>
         </div>
         
-        <div id="menu-exclusive-content">
-            <div class="menu-section">
-                <div class="section-title" data-i18n="gameSettings">Ajustes del Juego</div>
-                <div class="control-group">
-                    <label for="lang-select" data-i18n="language">Idioma</label>
-                    <select id="lang-select">
-                        <option value="es">Español</option>
-                        <option value="en">English</option>
-                    </select>
+        <div class="menu-layout">
+            <div class="menu-col">
+                <div class="menu-exclusive">
+                    <div class="menu-section">
+                        <div class="section-title" data-i18n="gameSettings">Ajustes del Juego</div>
+                        <div class="control-group">
+                            <label for="lang-select" data-i18n="language">Idioma</label>
+                            <select id="lang-select">
+                                <option value="es">Español</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="game-mode" data-i18n="gameMode">Modo de Juego</label>
+                            <select id="game-mode">
+                                <option value="levels" data-i18n="levels" selected>Niveles</option>
+                                <option value="infinite" data-i18n="infinite">Infinito</option>
+                            </select>
+                        </div>
+                        <div class="control-group" id="level-select-group">
+                            <label for="start-level" data-i18n="startLevel">Comenzar en Nivel</label>
+                            <select id="start-level"></select>
+                        </div>
+                    </div>
+
+                    <div class="menu-section">
+                        <div class="section-title" data-i18n="graphicsSettings">Gráficos</div>
+                        <div class="control-group">
+                            <label for="theme-select" data-i18n="theme">Tema Visual</label>
+                            <select id="theme-select">
+                                <option value="cyberpunk" data-i18n="themeCyberpunk">Neón Distópico</option>
+                                <option value="crimson" data-i18n="themeCrimson">Vacío Carmesí</option>
+                                <option value="toxic" data-i18n="themeToxic">Bosque Radiactivo</option>
+                                <option value="monochrome" data-i18n="themeMonochrome">Terminal Retro</option>
+                                <option value="synthwave" data-i18n="themeSynthwave">Retrowave 84</option>
+                                <option value="solar" data-i18n="themeSolar">Erupción Solar</option>
+                                <option value="abyss" data-i18n="themeAbyss">Fosa Abisal</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label data-i18n="particles">Partículas</label>
+                            <input type="checkbox" id="particles-toggle" checked>
+                        </div>
+                    </div>
                 </div>
-                <div class="control-group">
-                    <label for="game-mode" data-i18n="gameMode">Modo de Juego</label>
-                    <select id="game-mode">
-                        <option value="infinite" data-i18n="infinite">Infinito</option>
-                        <option value="levels" data-i18n="levels">Niveles</option>
-                    </select>
-                </div>
-                <div class="control-group" id="level-select-group">
-                    <label for="start-level" data-i18n="startLevel">Comenzar en Nivel</label>
-                    <select id="start-level"></select>
+
+                <div class="menu-section">
+                    <div class="section-title" data-i18n="audioSettings">Audio</div>
+                    <div class="control-group">
+                        <label for="master-volume" data-i18n="volume">Volumen</label>
+                        <input type="range" id="master-volume" min="0" max="1" step="0.05" value="0.5">
+                    </div>
+                    <div class="control-group">
+                        <label data-i18n="music">Música</label>
+                        <input type="checkbox" id="bgm-toggle" checked>
+                    </div>
                 </div>
             </div>
 
-            <div class="menu-section">
-                <div class="section-title" data-i18n="graphicsSettings">Gráficos</div>
-                <div class="control-group">
-                    <label for="theme-select" data-i18n="theme">Tema Visual</label>
-                    <select id="theme-select">
-                        <option value="cyberpunk">Neón Distópico</option>
-                        <option value="crimson">Vacío Carmesí</option>
-                        <option value="toxic">Bosque Radiactivo</option>
-                        <option value="monochrome">Terminal Retro</option>
-                        <option value="synthwave">Retrowave 84</option>
-                        <option value="solar">Erupción Solar</option>
-                        <option value="abyss">Fosa Abisal</option>
-                    </select>
+            <div class="menu-col menu-exclusive">
+                <div class="menu-section">
+                    <div class="section-title" data-i18n="controlsTitle">Controles</div>
+                    <div class="info-text">
+                        <span data-i18n="controlsMove">Movimiento: Flechas o WASD</span><br>
+                        <span data-i18n="controlsPause">Pausa / Menú: Tecla ESC</span>
+                    </div>
                 </div>
-                <div class="control-group">
-                    <label data-i18n="particles">Partículas</label>
-                    <input type="checkbox" id="particles-toggle" checked>
-                </div>
-            </div>
 
-            <div class="menu-section">
-                <div class="section-title" data-i18n="controlsTitle">Controles</div>
-                <div class="info-text">
-                    <span data-i18n="controlsMove">Movimiento: Flechas o WASD</span><br>
-                    <span data-i18n="controlsPause">Pausa / Menú: Tecla ESC</span>
-                </div>
-            </div>
-
-            <div class="menu-section">
-                <div class="section-title" data-i18n="infoTitle">Información</div>
-                <div class="info-text">
-                    <span data-i18n="infoDesc">Un proyecto sencillo para practicar programación, recreando el clásico Snake con la ayuda de Gemini 3.1. Creado por </span>
-                    <a href="https://www.linkedin.com/in/leandro-carlino/" target="_blank">Leandro Carlino</a>.
+                <div class="menu-section">
+                    <div class="section-title" data-i18n="infoTitle">Información</div>
+                    <div class="info-text">
+                        <span data-i18n="infoDesc">Un proyecto sencillo para practicar programación, recreando el clásico Snake con la ayuda de Gemini 3.1. Creado por </span>
+                        <a href="https://www.linkedin.com/in/leandro-carlino/" target="_blank">Leandro Carlino</a>.
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="menu-section">
-            <div class="section-title" data-i18n="audioSettings">Audio</div>
-            <div class="control-group">
-                <label for="master-volume" data-i18n="volume">Volumen</label>
-                <input type="range" id="master-volume" min="0" max="1" step="0.05" value="0.5">
-            </div>
-            <div class="control-group">
-                <label data-i18n="music">Música</label>
-                <input type="checkbox" id="bgm-toggle" checked>
-            </div>
+        <div class="btn-group">
+            <button id="startBtn" data-i18n="play">Jugar</button>
+            <button id="returnMenuBtn" class="hidden btn-secondary" data-i18n="mainMenu">Volver al Menú Principal</button>
+            <button id="saveBtn" class="menu-exclusive btn-secondary" data-i18n="saveProgress">Guardar Progreso</button>
         </div>
-
-        <button id="startBtn" data-i18n="play">Jugar</button>
-        <button id="returnMenuBtn" class="hidden btn-secondary" data-i18n="mainMenu">Volver al Menú Principal</button>
-        <button id="saveBtn" class="btn-secondary" data-i18n="saveProgress">Guardar Progreso</button>
     </div>
 
-    <canvas id="gameCanvas" width="900" height="700"></canvas>
+    <canvas id="gameCanvas" width="900" height="700" class="hidden"></canvas>
 
     <script src="game.js"></script>
 </body>

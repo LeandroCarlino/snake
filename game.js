@@ -1,6 +1,6 @@
 const dictionary = {
-    es: { mode: "Modo", level: "Nivel", score: "Puntuación", target: "Objetivo", gameOver: "Fin del Juego", paused: "Sistema Pausado", currentScoreLabel: "Puntuación", finalScore: "Puntuación Final", gameSettings: "Ajustes del Juego", language: "Idioma", gameMode: "Modo de Juego", infinite: "Infinito", levels: "Niveles", startLevel: "Comenzar en Nivel", graphicsSettings: "Gráficos", theme: "Tema Visual", particles: "Efectos de Partículas", controlsTitle: "Controles", controlsMove: "Movimiento: Flechas o WASD", controlsPause: "Pausa / Menú: Tecla ESC", audioSettings: "Audio", volume: "Volumen", music: "Música", play: "Jugar", resume: "Reanudar Secuencia", restart: "Reiniciar Secuencia", saveProgress: "Guardar Progreso", saved: "¡Guardado!", mainMenu: "Volver al Menú Principal", infoTitle: "Información", infoDesc: "Un proyecto sencillo para practicar programación, recreando el clásico Snake con la ayuda de Gemini 3.1. Creado por " },
-    en: { mode: "Mode", level: "Level", score: "Score", target: "Target", gameOver: "Game Over", paused: "System Paused", currentScoreLabel: "Score", finalScore: "Final Score", gameSettings: "Game Settings", language: "Language", gameMode: "Game Mode", infinite: "Infinite", levels: "Levels", startLevel: "Start at Level", graphicsSettings: "Graphics", theme: "Visual Theme", particles: "Particle Effects", controlsTitle: "Controls", controlsMove: "Movement: Arrows or WASD", controlsPause: "Pause / Menu: ESC Key", audioSettings: "Audio", volume: "Volume", music: "Music", play: "Play", resume: "Resume Sequence", restart: "Restart Sequence", saveProgress: "Save Progress", saved: "Saved!", mainMenu: "Return to Main Menu", infoTitle: "Information", infoDesc: "A simple practice project recreating the classic Snake with the assistance of Gemini 3.1. Created by " }
+    es: { mode: "Modo", level: "Nivel", score: "Puntuación", target: "Objetivo", gameOver: "Fin del Juego", paused: "Sistema Pausado", currentScoreLabel: "Puntuación", finalScore: "Puntuación Final", gameSettings: "Ajustes del Juego", language: "Idioma", gameMode: "Modo de Juego", infinite: "Infinito", levels: "Niveles", startLevel: "Comenzar en Nivel", graphicsSettings: "Gráficos", theme: "Tema Visual", themeCyberpunk: "Neón Distópico", themeCrimson: "Vacío Carmesí", themeToxic: "Bosque Radiactivo", themeMonochrome: "Terminal Retro", themeSynthwave: "Retrowave 84", themeSolar: "Erupción Solar", themeAbyss: "Fosa Abisal", particles: "Efectos de Partículas", controlsTitle: "Controles", controlsMove: "Movimiento: Flechas o WASD", controlsPause: "Pausa / Menú: Tecla ESC", audioSettings: "Audio", volume: "Volumen", music: "Música", play: "Jugar", resume: "Reanudar Secuencia", restart: "Reiniciar Secuencia", saveProgress: "Guardar Progreso", saved: "¡Guardado!", mainMenu: "Volver al Menú Principal", infoTitle: "Información", infoDesc: "Un proyecto sencillo para practicar programación, recreando el clásico Snake con la ayuda de Gemini 3.1. Creado por " },
+    en: { mode: "Mode", level: "Level", score: "Score", target: "Target", gameOver: "Game Over", paused: "System Paused", currentScoreLabel: "Score", finalScore: "Final Score", gameSettings: "Game Settings", language: "Language", gameMode: "Game Mode", infinite: "Infinite", levels: "Levels", startLevel: "Start at Level", graphicsSettings: "Graphics", theme: "Visual Theme", themeCyberpunk: "Dystopian Neon", themeCrimson: "Crimson Void", themeToxic: "Radioactive Forest", themeMonochrome: "Retro Terminal", themeSynthwave: "Retrowave 84", themeSolar: "Solar Flare", themeAbyss: "Abyssal Trench", particles: "Particle Effects", controlsTitle: "Controls", controlsMove: "Movement: Arrows or WASD", controlsPause: "Pause / Menu: ESC Key", audioSettings: "Audio", volume: "Volume", music: "Music", play: "Play", resume: "Resume Sequence", restart: "Restart Sequence", saveProgress: "Save Progress", saved: "Saved!", mainMenu: "Return to Main Menu", infoTitle: "Information", infoDesc: "A simple practice project recreating the classic Snake with the assistance of Gemini 3.1. Created by " }
 };
 
 let currentLanguage = navigator.language.startsWith('es') ? 'es' : 'en';
@@ -25,7 +25,7 @@ const uiElements = {
     startBtn: document.getElementById("startBtn"),
     saveBtn: document.getElementById("saveBtn"),
     returnMenuBtn: document.getElementById("returnMenuBtn"),
-    menuExclusive: document.getElementById("menu-exclusive-content"),
+    menuExclusives: document.querySelectorAll(".menu-exclusive"),
     modeSelect: document.getElementById("game-mode"),
     themeSelect: document.getElementById("theme-select"),
     particlesToggle: document.getElementById("particles-toggle"),
@@ -183,7 +183,7 @@ uiElements.bgmToggle.addEventListener('change', () => {
 const gameMetrics = { width: 900, height: 700, baseSpeed: 320, startLength: 120, growthFactor: 50, snakeWidth: 14, foodSize: 10 };
 
 let gameStateData = {
-    mode: 'infinite', level: 1, bodySegments: [], velX: 1, velY: 0, inputQueue: [],
+    mode: 'levels', level: 1, bodySegments: [], velX: 1, velY: 0, inputQueue: [],
     targetLength: gameMetrics.startLength, currentScore: 0, levelScore: 0,
     foodPos: {x: 0, y: 0}, speed: gameMetrics.baseSpeed, obstacleData: [], particleData: [],
     nextLevelRequirement: 0, isTransitioning: false, transitionEndLimit: 0, tickCounter: 0
@@ -318,10 +318,11 @@ function relocateFood() {
 }
 
 function renderMenuInterface() {
-    uiElements.menuExclusive.classList.remove("hidden");
-    uiElements.saveBtn.classList.remove("hidden");
+    uiElements.menuExclusives.forEach(el => el.classList.remove("hidden"));
+    uiElements.layer.classList.add("wide-mode");
     uiElements.returnMenuBtn.classList.add("hidden");
     uiElements.startBtn.innerText = dictionary[currentLanguage].play;
+    uiElements.canvas.classList.add("hidden");
 }
 
 function executeStart() {
@@ -341,6 +342,8 @@ function executeStart() {
     
     uiElements.layer.classList.add("hidden");
     uiElements.hud.style.display = "flex";
+    uiElements.canvas.classList.remove("hidden");
+    
     if (gameStateData.mode === 'infinite') {
         uiElements.hudLevelDisplay.style.display = 'none';
         uiElements.hudTarget.parentElement.style.display = 'none';
@@ -367,8 +370,8 @@ function executePause() {
     uiElements.endReason.innerText = dictionary[currentLanguage].paused;
     uiElements.finalScoreVal.innerText = gameStateData.currentScore;
     
-    uiElements.menuExclusive.classList.add("hidden");
-    uiElements.saveBtn.classList.add("hidden");
+    uiElements.menuExclusives.forEach(el => el.classList.add("hidden"));
+    uiElements.layer.classList.remove("wide-mode");
     uiElements.returnMenuBtn.classList.remove("hidden");
     
     uiElements.layer.classList.remove("hidden");
