@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Snake: Interfaz Segmentada</title>
+    <title>Snake</title>
     <style>
         :root {
             --bg-color: #0B0C10;
@@ -161,6 +161,22 @@
             background-color: var(--text-main);
             color: #000;
         }
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--accent);
+            transition: color 0.2s, border-color 0.2s;
+        }
+        a:hover {
+            color: var(--text-highlight);
+            border-color: var(--text-highlight);
+        }
+        .info-text {
+            font-size: 12px;
+            color: var(--text-main);
+            line-height: 1.5;
+            margin-top: 4px;
+        }
         canvas {
             background-color: transparent;
             border: 1px solid rgba(255,255,255,0.1);
@@ -249,6 +265,14 @@
                     <input type="checkbox" id="particles-toggle" checked style="width: 18px; height: 18px;">
                 </div>
             </div>
+
+            <div class="menu-section">
+                <div class="section-title" data-i18n="infoTitle">Información</div>
+                <div class="info-text">
+                    <span data-i18n="infoDesc">Un proyecto sencillo para practicar programación, recreando el clásico Snake con la ayuda de Gemini 3.1. Creado por </span>
+                    <a href="https://www.linkedin.com/in/leandro-carlino/" target="_blank">Leandro Carlino</a>.
+                </div>
+            </div>
         </div>
 
         <div class="menu-section">
@@ -272,8 +296,8 @@
 
     <script>
         const dictionary = {
-            es: { mode: "Modo", level: "Nivel", score: "Puntuación", target: "Objetivo", gameOver: "Fin del Juego", paused: "Sistema Pausado", currentScoreLabel: "Puntuación", finalScore: "Puntuación Final", gameSettings: "Ajustes del Juego", language: "Idioma", gameMode: "Modo de Juego", infinite: "Infinito", levels: "Niveles", startLevel: "Comenzar en Nivel", graphicsSettings: "Gráficos", theme: "Tema Visual", particles: "Efectos de Partículas", audioSettings: "Audio", volume: "Volumen", music: "Música", play: "Jugar", resume: "Reanudar Secuencia", restart: "Reiniciar Secuencia", saveProgress: "Guardar Progreso", saved: "¡Guardado!", mainMenu: "Volver al Menú Principal" },
-            en: { mode: "Mode", level: "Level", score: "Score", target: "Target", gameOver: "Game Over", paused: "System Paused", currentScoreLabel: "Score", finalScore: "Final Score", gameSettings: "Game Settings", language: "Language", gameMode: "Game Mode", infinite: "Infinite", levels: "Levels", startLevel: "Start at Level", graphicsSettings: "Graphics", theme: "Visual Theme", particles: "Particle Effects", audioSettings: "Audio", volume: "Volume", music: "Music", play: "Play", resume: "Resume Sequence", restart: "Restart Sequence", saveProgress: "Save Progress", saved: "Saved!", mainMenu: "Return to Main Menu" }
+            es: { mode: "Modo", level: "Nivel", score: "Puntuación", target: "Objetivo", gameOver: "Fin del Juego", paused: "Sistema Pausado", currentScoreLabel: "Puntuación", finalScore: "Puntuación Final", gameSettings: "Ajustes del Juego", language: "Idioma", gameMode: "Modo de Juego", infinite: "Infinito", levels: "Niveles", startLevel: "Comenzar en Nivel", graphicsSettings: "Gráficos", theme: "Tema Visual", particles: "Efectos de Partículas", audioSettings: "Audio", volume: "Volumen", music: "Música", play: "Jugar", resume: "Reanudar Secuencia", restart: "Reiniciar Secuencia", saveProgress: "Guardar Progreso", saved: "¡Guardado!", mainMenu: "Volver al Menú Principal", infoTitle: "Información", infoDesc: "Un proyecto sencillo para practicar programación, recreando el clásico Snake con la ayuda de Gemini 3.1. Creado por " },
+            en: { mode: "Mode", level: "Level", score: "Score", target: "Target", gameOver: "Game Over", paused: "System Paused", currentScoreLabel: "Score", finalScore: "Final Score", gameSettings: "Game Settings", language: "Language", gameMode: "Game Mode", infinite: "Infinite", levels: "Levels", startLevel: "Start at Level", graphicsSettings: "Graphics", theme: "Visual Theme", particles: "Particle Effects", audioSettings: "Audio", volume: "Volume", music: "Music", play: "Play", resume: "Resume Sequence", restart: "Restart Sequence", saveProgress: "Save Progress", saved: "Saved!", mainMenu: "Return to Main Menu", infoTitle: "Information", infoDesc: "A simple practice project recreating the classic Snake with the assistance of Gemini 3.1. Created by " }
         };
 
         let currentLanguage = navigator.language.startsWith('es') ? 'es' : 'en';
@@ -330,21 +354,29 @@
             'abyss': { bg: '#000511', ui: 'rgba(0, 10, 30, 0.95)', acc: '#0088FF', txt: '#AABBFF', hl: '#00FFCC', snake: '#0044AA', snakeCore: '#88CCFF', head: '#FFFFFF', food: '#00FFCC', obs: '#002255', obsFill: 'rgba(0, 34, 85, 0.4)' }
         };
 
-        let currentThemeParams = themeData['cyberpunk'];
         function applyVisualTheme(themeKey) {
-            currentThemeParams = themeData[themeKey];
-            document.documentElement.style.setProperty('--bg-color', currentThemeParams.bg);
-            document.documentElement.style.setProperty('--ui-bg', currentThemeParams.ui);
-            document.documentElement.style.setProperty('--accent', currentThemeParams.acc);
-            document.documentElement.style.setProperty('--text-main', currentThemeParams.txt);
-            document.documentElement.style.setProperty('--text-highlight', currentThemeParams.hl);
+            const params = themeData[themeKey] || themeData['cyberpunk'];
+            currentThemeParams = params;
+            document.documentElement.style.setProperty('--bg-color', params.bg);
+            document.documentElement.style.setProperty('--ui-bg', params.ui);
+            document.documentElement.style.setProperty('--accent', params.acc);
+            document.documentElement.style.setProperty('--text-main', params.txt);
+            document.documentElement.style.setProperty('--text-highlight', params.hl);
         }
-        uiElements.themeSelect.addEventListener('change', (e) => applyVisualTheme(e.target.value));
+
+        const savedTheme = localStorage.getItem('snakeTheme') || uiElements.themeSelect.value || 'cyberpunk';
+        uiElements.themeSelect.value = savedTheme;
+        applyVisualTheme(savedTheme);
+
+        uiElements.themeSelect.addEventListener('change', (e) => { 
+            applyVisualTheme(e.target.value); 
+            localStorage.setItem('snakeTheme', e.target.value);
+        });
 
         let maxLevelUnlocked = parseInt(localStorage.getItem('snakeMaxLevelUnlocked')) || 1;
         
-        function refreshLevelSelector() {
-            const previousSelection = uiElements.startLevelSelect.value || maxLevelUnlocked;
+        function refreshLevelSelector(targetLevel = null) {
+            const previousSelection = targetLevel || uiElements.startLevelSelect.value || maxLevelUnlocked;
             uiElements.startLevelSelect.innerHTML = '';
             for(let i = 1; i <= maxLevelUnlocked; i++) {
                 let option = document.createElement('option');
@@ -368,7 +400,7 @@
         }
         uiElements.modeSelect.addEventListener('change', syncModeUI);
 
-        let systemState = 'menu'; // menu, paused, playing
+        let systemState = 'menu';
         let previousTime = 0;
         let animationFrameId;
         let audioVolume = parseFloat(uiElements.volumeSlider.value);
@@ -650,6 +682,11 @@
             uiElements.hud.style.display = "none";
             uiElements.countdown.style.display = "none";
             refreshLevelSelector();
+            
+            uiElements.ctx.clearRect(0, 0, gameMetrics.width, gameMetrics.height);
+            gameStateData.bodySegments = [];
+            gameStateData.obstacleData = [];
+            gameStateData.particleData = [];
         }
 
         function initiatePhaseTransition(initial) {
@@ -677,11 +714,11 @@
             if(gameStateData.level > maxLevelUnlocked) {
                 maxLevelUnlocked = gameStateData.level;
                 localStorage.setItem('snakeMaxLevelUnlocked', maxLevelUnlocked);
-                refreshLevelSelector();
             }
 
             initializePositions();
             syncHUD();
+            refreshLevelSelector(gameStateData.level);
             initiatePhaseTransition(false);
         }
 
@@ -864,9 +901,8 @@
             if(gameStateData.isTransitioning) { uiElements.ctx.fillStyle = 'rgba(0,0,0,0.5)'; uiElements.ctx.fillRect(0,0, gameMetrics.width, gameMetrics.height); }
         }
         
+        refreshLevelSelector(maxLevelUnlocked);
         applyLanguage();
-        applyVisualTheme('cyberpunk');
-        refreshLevelSelector();
         syncModeUI();
         renderMenuInterface();
     </script>
