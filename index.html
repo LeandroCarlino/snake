@@ -2,8 +2,17 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Snake</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Snake — juego clásico con niveles</title>
+    <meta name="description" content="Snake en canvas con siete temas visuales, niveles, obstáculos, partículas y audio sintetizado. Se juega con flechas, WASD, gamepad o swipe.">
+    <meta name="theme-color" content="#0B0C10">
+    <meta name="color-scheme" content="dark">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Snake — juego clásico con niveles">
+    <meta property="og:description" content="Siete temas visuales, niveles, obstáculos y audio sintetizado. Jugá en el navegador.">
+
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -109,6 +118,13 @@
     </div>
 
     <canvas id="gameCanvas" width="900" height="700" class="hidden"></canvas>
+
+    <div id="dpad" class="dpad" aria-label="Controles táctiles">
+        <button type="button" class="dpad__btn dpad__up" data-dir="up" aria-label="Arriba">▲</button>
+        <button type="button" class="dpad__btn dpad__left" data-dir="left" aria-label="Izquierda">◀</button>
+        <button type="button" class="dpad__btn dpad__down" data-dir="down" aria-label="Abajo">▼</button>
+        <button type="button" class="dpad__btn dpad__right" data-dir="right" aria-label="Derecha">▶</button>
+    </div>
 
     <script src="game.js"></script>
 </body>

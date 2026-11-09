@@ -5,6 +5,15 @@ const dictionary = {
 
 let currentLanguage = navigator.language.startsWith('es') ? 'es' : 'en';
 
+/** localStorage puede fallar en modo privado o con la cuota llena. */
+function leerClave(clave) {
+    try { return localStorage.getItem(clave); } catch { return null; }
+}
+
+function guardarClave(clave, valor) {
+    try { localStorage.setItem(clave, String(valor)); } catch { /* sin almacenamiento */ }
+}
+
 function applyLanguage() {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
@@ -13,6 +22,7 @@ function applyLanguage() {
             else element.innerText = dictionary[currentLanguage][key];
         }
     });
+    document.documentElement.lang = currentLanguage;
     refreshLevelSelector();
 }
 
@@ -68,16 +78,16 @@ function applyVisualTheme(themeKey) {
     document.documentElement.style.setProperty('--text-highlight', params.hl);
 }
 
-const savedTheme = localStorage.getItem('snakeTheme') || uiElements.themeSelect.value || 'cyberpunk';
+const savedTheme = leerClave('snakeTheme') || uiElements.themeSelect.value || 'cyberpunk';
 uiElements.themeSelect.value = savedTheme;
 applyVisualTheme(savedTheme);
 
 uiElements.themeSelect.addEventListener('change', (e) => { 
     applyVisualTheme(e.target.value); 
-    localStorage.setItem('snakeTheme', e.target.value);
+    guardarClave('snakeTheme', e.target.value);
 });
 
-let maxLevelUnlocked = parseInt(localStorage.getItem('snakeMaxLevelUnlocked')) || 1;
+let maxLevelUnlocked = parseInt(leerClave('snakeMaxLevelUnlocked')) || 1;
 
 function refreshLevelSelector(targetLevel = null) {
     const previousSelection = targetLevel || uiElements.startLevelSelect.value || maxLevelUnlocked;
@@ -92,7 +102,7 @@ function refreshLevelSelector(targetLevel = null) {
 }
 
 uiElements.saveBtn.addEventListener('click', () => {
-    localStorage.setItem('snakeMaxLevelUnlocked', maxLevelUnlocked);
+    guardarClave('snakeMaxLevelUnlocked', maxLevelUnlocked);
     let originalText = uiElements.saveBtn.innerText;
     uiElements.saveBtn.innerText = dictionary[currentLanguage].saved;
     setTimeout(() => uiElements.saveBtn.innerText = originalText, 1500);
@@ -240,6 +250,30 @@ document.addEventListener('touchend', e => {
     }
 });
 
+// Cruzeta táctil para móvil: el swipe solo no siempre es cómodo.
+const dpadDirections = {
+    up: { x: 0, y: -1 },
+    down: { x: 0, y: 1 },
+    left: { x: -1, y: 0 },
+    right: { x: 1, y: 0 }
+};
+
+document.querySelectorAll('.dpad__btn').forEach(boton => {
+    boton.addEventListener('pointerdown', (evento) => {
+        evento.preventDefault();
+        if (systemState !== 'playing' || gameStateData.isTransitioning) return;
+        const direccion = dpadDirections[boton.dataset.dir];
+        if (direccion) registerInput(direccion);
+    });
+});
+
+// Si el jugador cambia de pestaña, se pausa: si no, vuelve y está muerto.
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && systemState === 'playing' && !gameStateData.isTransitioning) {
+        executePause();
+    }
+});
+
 function scanGamepadInput() {
     if (systemState !== 'playing' || gameStateData.isTransitioning) return;
     const activePads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -306,16 +340,40 @@ function populateObstacles(targetLevel) {
 }
 
 function relocateFood() {
-    let limitMargin = 40; let positionFound = false;
-    while (!positionFound) {
-        gameStateData.foodPos = { x: limitMargin + Math.random() * (gameMetrics.width - limitMargin * 2), y: limitMargin + Math.random() * (gameMetrics.height - limitMargin * 2) };
+    const margen = 40;
+    let positionFound = false;
+    let intentos = 0;
+
+    // Tope de intentos: si el tablero está casi lleno, no colgamos el juego.
+    while (!positionFound && intentos < 400) {
+        intentos++;
+        const x = margen + Math.random() * (gameMetrics.width - margen * 2);
+        const y = margen + Math.random() * (gameMetrics.height - margen * 2);
+        gameStateData.foodPos = { x, y };
         positionFound = true;
-        for (let obs of gameStateData.obstacleData) {
-            if (!obs.dynamic && gameStateData.foodPos.x > obs.x - 20 && gameStateData.foodPos.x < obs.x + obs.w + 20 && gameStateData.foodPos.y > obs.y - 20 && gameStateData.foodPos.y < obs.y + obs.h + 20) {
-                positionFound = false; break;
+
+        // Ni sobre un obstáculo (fijo o móvil)...
+        for (const obs of gameStateData.obstacleData) {
+            if (x > obs.x - 20 && x < obs.x + obs.w + 20 && y > obs.y - 20 && y < obs.y + obs.h + 20) {
+                positionFound = false;
+                break;
+            }
+        }
+
+        // ...ni debajo de la serpiente, donde sería imposible comerla.
+        if (positionFound) {
+            for (const segmento of gameStateData.bodySegments) {
+                if (Math.hypot(segmento.x - x, segmento.y - y) < 45) {
+                    positionFound = false;
+                    break;
+                }
             }
         }
     }
+}
+
+function marcarEnJuego(activo) {
+    document.body.classList.toggle('is-playing', activo);
 }
 
 function renderMenuInterface() {
@@ -356,6 +414,7 @@ function executeStart() {
     uiElements.hudMode.innerText = gameStateData.mode === 'infinite' ? dictionary[currentLanguage].infinite : dictionary[currentLanguage].levels;
 
     systemState = 'playing';
+    marcarEnJuego(true);
     initiatePhaseTransition(true);
     toggleMusicSequence();
     
@@ -366,6 +425,7 @@ function executeStart() {
 
 function executePause() {
     systemState = 'paused';
+    marcarEnJuego(false);
     haltMusicSequence();
     
     uiElements.endStatus.classList.remove("hidden");
@@ -383,6 +443,7 @@ function executePause() {
 
 function executeResume() {
     systemState = 'playing';
+    marcarEnJuego(true);
     uiElements.endStatus.classList.add("hidden");
     uiElements.layer.classList.add("hidden");
     toggleMusicSequence();
@@ -391,6 +452,7 @@ function executeResume() {
 
 function executeReturnToMenu() {
     systemState = 'menu';
+    marcarEnJuego(false);
     renderMenuInterface();
     uiElements.endStatus.classList.add("hidden");
     uiElements.hud.style.display = "none";
@@ -427,7 +489,7 @@ function processLevelAdvance() {
     
     if(gameStateData.level > maxLevelUnlocked) {
         maxLevelUnlocked = gameStateData.level;
-        localStorage.setItem('snakeMaxLevelUnlocked', maxLevelUnlocked);
+        guardarClave('snakeMaxLevelUnlocked', maxLevelUnlocked);
     }
 
     initializePositions();
@@ -438,6 +500,7 @@ function processLevelAdvance() {
 
 function terminateGame() {
     systemState = 'menu';
+    marcarEnJuego(false);
     haltMusicSequence();
     playEventSound('crash');
     

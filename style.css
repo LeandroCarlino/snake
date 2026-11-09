@@ -17,6 +17,7 @@ body {
     padding: 0;
     overflow: hidden;
     height: 100vh;
+    height: 100dvh;
     justify-content: center;
     transition: background-color 0.5s ease;
     touch-action: none;
@@ -282,6 +283,57 @@ canvas {
 
 .hidden { display: none !important; }
 .disabled { opacity: 0.5; pointer-events: none; }
+
+/* Foco visible para teclado (los botones no tenían) */
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible {
+    outline: 2px solid var(--text-highlight);
+    outline-offset: 2px;
+}
+
+/* Cruzeta táctil: solo en pantallas sin puntero fino y durante la partida */
+.dpad { display: none; }
+
+@media (pointer: coarse) {
+    body.is-playing .dpad {
+        display: grid;
+        position: fixed;
+        bottom: max(1rem, env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        grid-template-columns: repeat(3, 3.2rem);
+        grid-template-rows: repeat(2, 3.2rem);
+        gap: 0.4rem;
+        z-index: 9;
+        touch-action: none;
+    }
+}
+
+.dpad__btn {
+    width: auto;
+    padding: 0;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--accent);
+    font-size: 1.05rem;
+    box-shadow: none;
+    letter-spacing: 0;
+}
+
+.dpad__btn:hover { background: rgba(0, 0, 0, 0.75); transform: none; box-shadow: none; }
+.dpad__btn:active { background: var(--accent); color: #000; }
+.dpad__up { grid-column: 2; grid-row: 1; }
+.dpad__left { grid-column: 1; grid-row: 2; }
+.dpad__down { grid-column: 2; grid-row: 2; }
+.dpad__right { grid-column: 3; grid-row: 2; }
+
+@media (prefers-reduced-motion: reduce) {
+    body { transition: none; }
+    button { transition: none; }
+}
 
 @media (max-width: 768px) {
     .menu-layout {
